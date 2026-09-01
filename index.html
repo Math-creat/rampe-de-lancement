@@ -625,14 +625,15 @@ function biensFiltres(){
     if(document.getElementById('fQuestions').value && !(b.aDemander||'').trim()) return false;
     if(!q) return true;
     const texte = [titre(b), b.ville, b.quartier, b.adresse, b.titreAnnonce,
-                   b.commentaires, b.aDemander, b.contactAgence]
+                   b.commentaires, b.aDemander, b.contactAgence, b.lien]
       .filter(Boolean).join(' ');
     if(texte.toLowerCase().includes(q)) return true;
-    // recherche par numéro : on compare chiffre à chiffre, quel que soit le formatage
+    // recherche par numéro, quel que soit le formatage : téléphone d'agence
+    // comme référence d'annonce Leboncoin (le long nombre à la fin du lien)
     const qd = chiffres(q);
     if(qd.length < 4) return false;
-    const tel = chiffres([b.contactAgence, b.commentaires, b.aDemander].filter(Boolean).join(' '));
-    return tel.includes(qd);
+    const nums = chiffres([b.contactAgence, b.commentaires, b.aDemander].filter(Boolean).join(' '));
+    return nums.includes(qd) || chiffres(b.lien || '').includes(qd);
   });
   const tri = document.getElementById('tri').value;
   const key = b => {
@@ -732,33 +733,21 @@ function carteBien(b){
     const r = s ? calc(b, s) : null;
     const col = r ? {green:'var(--green)', amber:'var(--amber)', red:'var(--red)', gray:'var(--gray)'}[r.verdict.c] : 'var(--gray)';
     const nsc = (b.scenarios||[]).length;
-    // le titre reste celui que Mathis reconnaît ; l'intitulé de l'annonce passe
-    // en seconde ligne grise, comme le détail d'une annonce
-    const carac = [b.type, n(b.surface) ? Math.round(n(b.surface)) + ' m²' : ''].filter(Boolean).join(' · ');
-    const ligne2 = b.titreAnnonce || carac || '—';
+    // carte volontairement sobre : titre, prix, où en est le contact,
+    // et les trois chiffres qui décident. Le reste est dans la fiche.
     return `<div class="mcard" onclick="App.ouvrir('${b.id}')">
       <div class="bande" style="background:${col}"></div>
       <h3>${esc(titre(b))}</h3>
       <div class="prix">${n(b.prix) ? eur(b.prix) : '—'}</div>
-      <div class="lieu">${esc(ligne2)}</div>
       <div class="mc-top">
-        <span class="pill ${STATUT_PILL[b.statut]||'gray'}">${esc(b.statut)}</span>
         <span class="pill ${CONTACT_PILL[b.contacte]||'gray'}">${esc(b.contacte)}</span>
-        ${b.dpe && DPE_COL[b.dpe] ? dpeBadge(b.dpe) : ''}
-        ${nsc > 1 ? `<span class="pill purple">${nsc} scénarios</span>` : ''}
-        ${(b.aDemander||'').trim() ? `<span class="pill amber" title="${esc(b.aDemander)}">❓ À demander</span>` : ''}
       </div>
-      <div class="sub">${esc(s ? s.nom : 'Aucun scénario')}${s ? ' · ' + esc(s.strategie) : ''}</div>
       ${afficherContact ? contactLigne(b) : ''}
       ${r ? `<div class="mc-nums">
         <div><span>Cashflow</span><b class="${cls(r.cashflow)}">${eurS(r.cashflow)}</b></div>
         <div><span>Rentabilité</span><b>${pct(r.renta)}</b></div>
-        <div><span>Travaux</span><b>${eur(r.travaux)}</b></div>
-        <div><span>Prix/m²</span><b>${r.prixM2 ? eur(r.prixM2) : '—'}</b></div>
         <div><span>Coût total</span><b>${eur(r.coutTotal)}</b></div>
-      </div>
-      <div class="verdict ${r.verdict.c}"><b>${r.verdict.t}</b>${
-        r.negoNeed > 0 ? `<span>${eur(r.cibleCF)}/mois \u2192 acheter à ${eur(r.objectif.prixMax)}</span>` : ''}</div>` : ''}
+      </div>` : ''}
     </div>`;
   })(b);
 }
@@ -1488,18 +1477,27 @@ const App = {
     a.click(); URL.revokeObjectURL(a.href);
   },
 
+  /* Vrai quand l'utilisateur est en train de taper dans un champ : dans ce cas
+     on ne reconstruit jamais la page, on se contente de rafraîchir les valeurs. */
+  enSaisie(){
+    const el = document.activeElement;
+    if(!el) return false;
+    const t = el.tagName;
+    return (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') && !!el.closest('.wrap');
+  },
+  /* Mise à jour ciblée, sans toucher au champ en cours d'édition. */
+  majDouce(){
+    if(view !== 'detail') return;
+    const b = state.biens.find(x => x.id === currentId);
+    if(b){ majCalculs(b); majNego(b); }
+  },
+
   /* redessine sans casser le focus du champ en cours de saisie */
   softRefresh(){
     clearTimeout(this._sr);
     this._sr = setTimeout(() => {
-      const el = document.activeElement;
-      const path = el && el.tagName === 'INPUT' || el && el.tagName === 'TEXTAREA' || el && el.tagName === 'SELECT';
-      if(!path){ render(); return; }
-      // mise à jour ciblée : uniquement les valeurs calculées visibles
-      if(view === 'detail'){
-        const b = state.biens.find(x => x.id === currentId);
-        if(b){ majCalculs(b); majNego(b); }
-      }
+      if(!this.enSaisie()){ render(); return; }
+      this.majDouce();
     }, 120);
   }
 };
@@ -1775,9 +1773,22 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
       return;
     }
     const {merged, localWins} = mergeStates(local, remote);
+
+    /* La base nous renvoie systématiquement ce qu'on vient d'y écrire. Sans ce
+       test, chaque frappe provoquait un aller-retour puis une reconstruction de
+       la page — et le curseur sortait du champ en cours de saisie. */
+    const identique = JSON.stringify(merged) === JSON.stringify(local);
+    if(identique){
+      etat('🟢', 'Synchronisé');
+      if(localWins) window.pushState();
+      return;
+    }
+
     const remoteBrought = (remote.updatedAt||0) > (local.updatedAt||0);
     applying = true;
-    A.setState(merged); A.persistLocal(); A.render();
+    A.setState(merged); A.persistLocal();
+    // pendant une saisie, on rafraîchit les chiffres sans reconstruire la page
+    if(A.enSaisie()) A.majDouce(); else A.render();
     applying = false;
     etat('🟢', 'Synchronisé');
     if(localWins) window.pushState();
