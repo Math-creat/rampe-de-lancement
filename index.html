@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La rampe de lancement — Analyse de biens</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rampe">
+<style>
+/* Palette clin d'œil à Leboncoin : fond gris clair, cartes blanches bordées,
+   orange en couleur d'action, texte presque noir. */
+:root{
+  --bg:#f4f4f4; --card:#fff; --ink:#171725; --muted:#6a6a72; --line:#e2e2e6;
+  --navy:#171725; --navy2:#4b4b57; --navy-soft:#f0f0f2;
+  --orange:#ff6e14; --orange-dark:#e05c00; --orange-soft:#fff0e6;
+  --gold:#C9A227; --gold-soft:#fbf3d9;
+  --green:#16a34a; --green-soft:#dcfce7;
+  --amber:#d97706; --amber-soft:#fef3c7;
+  --red:#dc2626; --red-soft:#fee2e2;
+  --purple:#7c3aed; --purple-soft:#ede9fe;
+  --teal:#0d9488; --teal-soft:#ccfbf1;
+  --gray:#64748b; --gray-soft:#e2e8f0;
+  --radius:14px; --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:80px;font-size:15px}
+.wrap{max-width:1240px;margin:0 auto;padding:14px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+header .logo{width:38px;height:38px;border-radius:10px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex:0 0 auto}
+header h1{font-size:1.25rem;letter-spacing:-.02em;font-weight:800}
+header h1 small{display:block;font-size:.72rem;color:var(--muted);font-weight:500;letter-spacing:0}
+.who{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted)}
+.who .seg{display:flex;background:var(--gray-soft);border-radius:99px;padding:3px}
+.who button{border:0;background:transparent;padding:5px 13px;border-radius:99px;font-size:.83rem;cursor:pointer;font-weight:600;color:var(--muted)}
+.who button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+#syncDot,#cadenas{font-size:1rem;cursor:default}
+
+.tabs{position:sticky;top:8px;z-index:40;display:flex;background:var(--card);border-radius:99px;padding:4px;box-shadow:var(--shadow);margin-bottom:14px}
+.tab{flex:1;text-align:center;padding:10px 4px;border-radius:99px;border:0;background:transparent;font-weight:700;cursor:pointer;color:var(--muted);font-size:.88rem;white-space:nowrap}
+.tab.on{background:var(--orange);color:#fff}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:11px 14px}
+.kpi small{display:block;color:var(--muted);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.kpi b{font-size:1.5rem;line-height:1.25;display:block;color:var(--ink)}
+.kpi b.pos{color:var(--green)} .kpi b.neg{color:var(--red)}
+
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar input[type=search]{flex:1;min-width:140px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:.9rem}
+.toolbar select{border:1px solid var(--line);border-radius:10px;padding:8px;font:inherit;font-size:.84rem;background:#fff}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;font:inherit;font-size:.86rem;cursor:pointer;font-weight:700}
+.btn:hover{background:var(--gray-soft)}
+.btn.primary{background:var(--orange);color:#fff;border-color:var(--orange)}
+.btn.primary:hover{background:var(--orange-dark);border-color:var(--orange-dark)}
+.btn.gold{background:var(--gold);color:#2B2200;border-color:var(--gold)}
+.btn.danger{color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:.78rem;border-radius:8px}
+
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.mcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;cursor:pointer;display:flex;flex-direction:column;gap:7px;transition:box-shadow .12s,border-color .12s}
+.mcard:hover{border-color:#c9c9d0;box-shadow:0 4px 14px rgba(23,23,37,.10)}
+.mcard h3{font-size:.95rem;line-height:1.35;font-weight:600}
+.mcard .prix{font-size:1.32rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.mcard .lieu{font-size:.82rem;color:var(--muted);font-weight:500}
+.mcard .sub{font-size:.78rem;color:var(--muted);font-weight:600}
+.mcard .bande{height:4px;border-radius:99px;width:44px}
+.contact-l{font-size:.82rem;font-weight:700;color:var(--orange-dark);background:var(--orange-soft);border-radius:8px;padding:5px 9px}
+.contact-l a{color:inherit;text-decoration:none}
+.contact-l a:hover{text-decoration:underline}
+.contact-l.vide{color:var(--muted);background:var(--gray-soft);font-weight:600}
+.mc-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mc-nums{display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;border-top:1px solid var(--line);padding-top:8px}
+.mc-nums div{display:flex;flex-direction:column}
+.mc-nums span{font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase}
+.mc-nums b{font-size:1rem}
+.pill{border-radius:99px;padding:3px 10px;font-weight:700;font-size:.73rem;white-space:nowrap}
+.pill.gray{background:var(--gray-soft);color:#475569}
+.pill.blue{background:var(--orange-soft);color:var(--orange-dark)}
+.pill.green{background:var(--green-soft);color:#166534}
+.pill.amber{background:var(--amber-soft);color:#92400e}
+.pill.red{background:var(--red-soft);color:#991b1b}
+.pill.purple{background:var(--purple-soft);color:#5b21b6}
+.pill.teal{background:var(--teal-soft);color:#115e59}
+.pill.gold{background:var(--gold-soft);color:#6b5200}
+.pos{color:var(--green)} .neg{color:var(--red)}
+.empty{text-align:center;color:var(--muted);padding:44px 16px}
+.alerte{background:var(--amber-soft);color:#7c3d00;border:1px solid #f0c98a;border-radius:12px;padding:11px 14px;margin-bottom:12px;font-size:.86rem;line-height:1.5}
+.alerte .t{display:block;font-weight:800;margin-bottom:3px}
+.alerte.lecture-b{background:var(--navy-soft);border-color:var(--line);color:var(--ink)}
+body.lecture .toolbar .btn.primary,
+body.lecture .strats,
+body.lecture .editbar,
+body.lecture .del-bien,
+body.lecture .del-sc,
+body.lecture .sc-head .btn.sm,
+body.lecture .sc .btn.sm,
+body.lecture .det-actions,
+body.lecture #v-detail .panel:last-child > div:last-child .btn{display:none!important}
+body.lecture input:disabled,body.lecture select:disabled,body.lecture textarea:disabled{
+  background:#fafafa;color:var(--ink);opacity:1;-webkit-text-fill-color:var(--ink);cursor:default}
+.groupes{display:flex;flex-direction:column;gap:16px}
+.grp-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+.grp-h b{font-size:.95rem;color:var(--ink)}
+
+.panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+.panel>h2{font-size:.82rem;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--navy2);font-weight:800}
+.back{border:0;background:transparent;font-size:.95rem;font-weight:800;color:var(--navy2);cursor:pointer;padding:8px 0;margin-bottom:4px}
+.det-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px}
+.det-head h2{font-size:1.2rem;margin:0;flex:1;min-width:220px;line-height:1.3}
+.det-head .ann{font-size:.78rem;color:var(--muted);font-weight:600;width:100%}
+
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.73rem;color:var(--muted);font-weight:700}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:.88rem;background:#fff;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--navy2);outline-offset:-1px;border-color:var(--navy2)}
+.field textarea{min-height:70px;resize:vertical}
+.field .hint{font-size:.7rem;color:var(--muted)}
+.readonly{background:#f8fafc;border:1px dashed var(--line);border-radius:9px;padding:8px 10px;font-size:.88rem;font-weight:700}
+
+/* scenarios */
+.strats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.strat{display:inline-flex;align-items:center;gap:7px;border:2px solid var(--line);border-radius:99px;padding:7px 14px;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--muted);background:#fff;user-select:none}
+.strat:hover{border-color:var(--orange)}
+.strat input{accent-color:var(--navy);width:15px;height:15px;cursor:pointer;margin:0}
+.strat.on{border-color:var(--orange);background:var(--orange-soft);color:var(--orange-dark)}
+.strat b{background:var(--orange);color:#fff;border-radius:99px;padding:0 7px;font-size:.72rem}
+.scgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;align-items:start}
+.sc{border:2px solid var(--line);border-radius:12px;padding:12px;background:#fff;display:flex;flex-direction:column;gap:10px}
+.sc.retenu{border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-soft)}
+.sc-head{display:flex;gap:6px;align-items:center}
+.sc-head input{flex:1;border:0;border-bottom:2px solid var(--line);font:inherit;font-weight:800;font-size:.95rem;padding:3px 0}
+.sc-head input:focus{outline:0;border-color:var(--navy2)}
+.sc-res{background:#f8fafc;border-radius:10px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sc-res div{display:flex;flex-direction:column}
+.sc-res span{font-size:.67rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+.sc-res b{font-size:1.02rem}
+.sc-res .wide{grid-column:1/-1}
+.editbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--gold-soft);border:1px solid #e6cf85;border-radius:10px;padding:8px 10px}
+.editbar[hidden]{display:none}
+.editbar span{flex:1;min-width:110px;font-size:.76rem;font-weight:700;color:#6b5200}
+#eb-bien{margin-top:10px}
+.verdict{border-radius:10px;padding:9px 11px;font-size:.8rem;line-height:1.45;display:flex;flex-direction:column;gap:3px}
+.verdict b{font-size:.86rem}
+.verdict.green{background:var(--green-soft);color:#166534}
+.verdict.amber{background:var(--amber-soft);color:#92400e}
+.verdict.red{background:var(--red-soft);color:#991b1b}
+.verdict.gray{background:var(--gray-soft);color:#475569}
+.loyers{display:flex;flex-wrap:wrap;gap:6px}
+.loyers input{width:76px;border:1px solid var(--line);border-radius:8px;padding:6px;font:inherit;font-size:.85rem;text-align:right}
+.sc details summary{cursor:pointer;font-size:.78rem;font-weight:700;color:var(--navy2);padding:4px 0}
+
+
+table.t{width:100%;border-collapse:collapse;font-size:.84rem}
+table.t th{background:var(--navy-soft);color:var(--ink);font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;padding:8px 7px;text-align:right;cursor:pointer;white-space:nowrap;position:sticky;top:0}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t th.l{text-align:left}
+table.t td{padding:8px 7px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.t tr:hover td{background:#f8fafc}
+table.t td.name{font-weight:700;cursor:pointer;color:var(--navy2);white-space:normal;min-width:170px}
+.tscroll{overflow-x:auto;max-height:70vh;overflow-y:auto}
+
+.nego table{width:100%;border-collapse:collapse;font-size:.85rem}
+.nego th{background:var(--gold-soft);color:#6b5200;font-size:.7rem;text-transform:uppercase;padding:7px 6px;text-align:right}
+.nego th:first-child{text-align:left}
+.nego td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right}
+.nego td:first-child{text-align:left;font-weight:700}
+
+.dpe{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;border-radius:7px;font-weight:800;font-size:.85rem}
+.modal{position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;align-items:center;justify-content:center;z-index:300;padding:20px}
+.modal.on{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:20px;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(16,24,40,.28)}
+.modal-box p{font-size:.95rem;line-height:1.5;margin-bottom:16px}
+.modal-act{display:flex;gap:8px;justify-content:flex-end}
+.btn.danger-solid{background:var(--red);color:#fff;border-color:var(--red)}
+.btn.danger-solid:hover{background:#a81f19}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:11px;font-size:.88rem;font-weight:600;z-index:200;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:.96}
+.foot{text-align:center;color:var(--muted);font-size:.76rem;padding:22px 0;line-height:1.7}
+.foot b{color:var(--ink);font-weight:700}
+@media(max-width:760px){
+  body{padding-bottom:24px}
+  .wrap{padding:10px}
+  header h1{font-size:1.02rem}
+  header h1 small{font-size:.68rem}
+  .who{margin-left:auto;font-size:.75rem}
+  .who button{padding:5px 9px;font-size:.75rem}
+  .tab{font-size:.8rem;padding:9px 2px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi b{font-size:1.25rem}
+  .kpi:nth-child(2){display:none}   /* "Scénarios" : peu utile sur petit écran */
+  .panel,.grp{scroll-margin-top:64px}
+  .toolbar{gap:6px}
+  .toolbar input[type=search]{flex:1 1 100%}
+  .toolbar select{flex:1 1 calc(50% - 3px);min-width:0}
+  .toolbar .btn{flex:1 1 100%}
+  .mgrid{grid-template-columns:1fr}
+  .scgrid{grid-template-columns:1fr}
+  .strat{font-size:.8rem;padding:6px 11px}
+  .panel{padding:13px}
+  .fgrid{grid-template-columns:1fr 1fr;gap:8px}
+  .fgrid .field:has(textarea){grid-column:1/-1}
+  .det-head h2{font-size:1.05rem;min-width:0}
+  .nego table{font-size:.78rem}
+  .nego th,.nego td{padding:6px 4px}
+  table.t{font-size:.78rem}
+}
+@media(max-width:420px){
+  .fgrid{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">🏗️</div>
+  <h1>La rampe de lancement<small>Analyse de biens &amp; scénarios</small></h1>
+  <div class="who">
+    <span id="cadenas" title="">🔒</span>
+    <span id="syncDot" title="Synchro">⚪</span>
+    <div class="seg" id="whoSeg"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-v="liste">🏠 Biens</button>
+  <button class="tab" data-v="compare">⚖️ Comparateur</button>
+  <button class="tab" data-v="reglages">⚙️ Réglages</button>
+</div>
+
+<div id="alerte" class="alerte" hidden></div>
+<div id="bandeauLecture" class="alerte lecture-b" hidden>
+  <span class="t">🔒 Mode consultation</span>
+  Tout est lisible, rien n'est modifiable. Pour reprendre la main :
+  Réglages → Espace gérant.
+</div>
+
+<div id="v-liste">
+  <div class="kpis" id="kpis"></div>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Rechercher (ville, quartier, titre…)">
+    <select id="fStatut"></select>
+    <select id="fQuestions">
+      <option value="">Tous les biens</option>
+      <option value="1">Avec questions en attente</option>
+    </select>
+    <select id="grp">
+      <option value="">Aucun regroupement</option>
+      <option value="statut">Grouper par étape</option>
+      <option value="ville">Grouper par ville</option>
+      <option value="strategie">Grouper par stratégie</option>
+      <option value="fiab">Grouper par fiabilité</option>
+      <option value="contact">Grouper par contact agence</option>
+    </select>
+    <select id="tri">
+      <option value="cashflow">Tri : cashflow ↓</option>
+      <option value="brute">Tri : rentabilité ↓</option>
+      <option value="contact">Tri : contact agence</option>
+    </select>
+    <button class="btn primary" onclick="App.nouveauBien()">＋ Bien</button>
+  </div>
+  <div class="mgrid" id="grid"></div>
+</div>
+
+<div id="v-detail" style="display:none"></div>
+
+<div id="v-compare" style="display:none">
+  <div class="panel">
+    <h2>Tous les scénarios, tous les biens</h2>
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:10px">Clique sur un en-tête pour trier. Clique sur un nom pour ouvrir la fiche.</p>
+    <div class="tscroll"><table class="t" id="cmp"></table></div>
+  </div>
+</div>
+
+<div id="v-reglages" style="display:none"></div>
+
+<div class="foot">
+  <b>La rampe de lancement</b><br>
+  Conçu et développé par Mathis Cossu
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"></div>
+
+<script>window.__SEED__ = [{"id": "seed-01", "updatedAt": 1, "titre": "", "ville": "Tours", "quartier": "", "adresse": "", "type": "T4", "surface": 75, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3254350362", "titreAnnonce": "T4 libre 1er étage Résidence Le grand Mail", "prix": 86000, "honoPct": 0, "notairePct": 0.08, "taxe": 1500, "fiabTaxe": "Estimée", "copro": 2000, "fiabCopro": "Estimée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "D", "ges": "C", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "Tous les gros travaux de copropriété ont été réalisés.\nTaxe foncière, charges copro et énergétiques estimées.", "scenarios": [{"id": "seed-01-a", "nom": "Rafraîchissement", "strategie": "Colocation", "travaux": 5000, "loyers": [450, 450, 450], "notes": "", "dpeApres": "", "vacPct": 0.05, "energie": 1300, "gestionPct": 0}], "retenuId": null, "aDemander": "Confirmer la taxe foncière, les charges de copropriété et la facture énergétique (aujourd'hui estimées)."}, {"id": "seed-02", "updatedAt": 1, "titre": "", "ville": "Poitiers", "quartier": "", "adresse": "", "type": "T6", "surface": 120, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3220157444", "titreAnnonce": "Maison de ville 6 pièces 120 m²", "prix": 139900, "honoPct": 0, "notairePct": 0.08, "taxe": 1500, "fiabTaxe": "Estimée", "copro": 0, "fiabCopro": "Confirmée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "E", "ges": "E", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "Possibilité de faire 2 logements ?\nFaire une 4ème chambre ?", "scenarios": [{"id": "seed-02-a", "nom": "Rafraîchissement", "strategie": "Colocation", "travaux": 50000, "loyers": [400, 400, 400, 400], "notes": "Hypothèse reprise du tableur : 50 000 € de travaux, 4 chambres en coloc.", "dpeApres": "", "vacPct": 0.05, "energie": 0, "gestionPct": 0}, {"id": "seed-02-b", "nom": "Division 2 logements", "strategie": "Division", "travaux": 0, "loyers": [0, 0], "notes": "À chiffrer : 2e compteur, cloisonnement, 2e cuisine/SdB, mise aux normes.", "dpeApres": "", "vacPct": 0.05, "energie": 0, "gestionPct": 0}, {"id": "seed-02-c", "nom": "4ème chambre", "strategie": "Colocation", "travaux": 0, "loyers": [400, 400, 400, 400], "notes": "À chiffrer : cloison, porte, éventuelle fenêtre. Vérifier surface et hauteur réglementaires.", "dpeApres": "", "vacPct": 0.05, "energie": 0, "gestionPct": 0}], "retenuId": null, "aDemander": "Faisabilité de 2 logements séparés ? Possibilité d'une 4ème chambre ? Montant de la taxe foncière."}, {"id": "seed-03", "updatedAt": 1, "titre": "", "ville": "Poitiers", "quartier": "", "adresse": "", "type": "T5", "surface": 106, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3212677390", "titreAnnonce": "Appartement 5 pièces 106 m²", "prix": 126000, "honoPct": 0, "notairePct": 0.08, "taxe": 1600, "fiabTaxe": "Confirmée", "copro": 3462, "fiabCopro": "Estimée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "C", "ges": "C", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "", "scenarios": [{"id": "seed-03-a", "nom": "Rafraîchissement", "strategie": "Colocation", "travaux": 20000, "loyers": [400, 400, 400, 400], "notes": "", "dpeApres": "", "vacPct": 0.05, "energie": 0, "gestionPct": 0}], "retenuId": null, "aDemander": "Confirmer les charges de copropriété (3 462 € : part propriétaire ou totale ?). Facture énergétique."}, {"id": "seed-04", "updatedAt": 1, "titre": "", "ville": "Poitiers", "quartier": "", "adresse": "", "type": "T4", "surface": 87, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3215535040", "titreAnnonce": "Appartement 4 pièces 87 m²", "prix": 99990, "honoPct": 0, "notairePct": 0.08, "taxe": 1509, "fiabTaxe": "Confirmée", "copro": 644, "fiabCopro": "Confirmée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "D", "ges": "C", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "Place de parking privative.\nCopropriété : 3 352,94 €/an (dont 2 708,92 € à la charge du locataire).\nEst-ce que c'est loué ?", "scenarios": [{"id": "seed-04-a", "nom": "Rafraîchissement", "strategie": "Colocation", "travaux": 5000, "loyers": [400, 400, 400], "notes": "", "dpeApres": "", "vacPct": 0.05, "energie": 1900, "gestionPct": 0}], "retenuId": null, "aDemander": "Est-ce que le bien est déjà loué ? Le parking privatif est-il inclus dans le prix ?"}, {"id": "seed-05", "updatedAt": 1, "titre": "", "ville": "Poitiers", "quartier": "", "adresse": "", "type": "T4", "surface": 100, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3148458644", "titreAnnonce": "Appartement 4 pièces 100 m²", "prix": 124000, "honoPct": 0, "notairePct": 0.08, "taxe": 1600, "fiabTaxe": "Estimée", "copro": 0, "fiabCopro": "Confirmée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "C", "ges": "C", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "\"Pas de charges courantes liées à la copropriété\".\nObjectif : faire une 4ème chambre.", "scenarios": [{"id": "seed-05-a", "nom": "Rafraîchissement", "strategie": "Colocation", "travaux": 15000, "loyers": [400, 400, 400], "notes": "", "dpeApres": "", "vacPct": 0.05, "energie": 0, "gestionPct": 0}, {"id": "seed-05-b", "nom": "4ème chambre", "strategie": "Colocation", "travaux": 0, "loyers": [400, 400, 400, 400], "notes": "À chiffrer : cloison, porte, électricité. 100 m² pour 4 chambres, ça passe.", "dpeApres": "", "vacPct": 0.05, "energie": 0, "gestionPct": 0}], "retenuId": null, "aDemander": "Confirmer la taxe foncière. Vérifier qu'une 4ème chambre est réalisable."}, {"id": "seed-06", "updatedAt": 1, "titre": "", "ville": "Poitiers", "quartier": "", "adresse": "", "type": "T4", "surface": 91, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3238142772", "titreAnnonce": "Maison 4 pièces 91 m²", "prix": 147000, "honoPct": 0, "notairePct": 0.08, "taxe": 1522, "fiabTaxe": "Confirmée", "copro": 0, "fiabCopro": "Confirmée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "D", "ges": "D", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "Peut-être une 4ème chambre ou 2 logements ?\nLoyer peut-être un peu élevé, mais je pense faisable vu le bien.\nTravaux = rafraîchissement. Il en faut pour la classe énergétique ?", "scenarios": [{"id": "seed-06-a", "nom": "Rafraîchissement", "strategie": "Colocation", "travaux": 20000, "loyers": [375, 375, 375, 375], "notes": "", "dpeApres": "", "vacPct": 0.05, "energie": 1700, "gestionPct": 0}, {"id": "seed-06-b", "nom": "4ème chambre", "strategie": "Colocation", "travaux": 0, "loyers": [375, 375, 375, 375], "notes": "À chiffrer.", "dpeApres": "", "vacPct": 0.05, "energie": 1700, "gestionPct": 0}, {"id": "seed-06-c", "nom": "Division 2 logements", "strategie": "Division", "travaux": 0, "loyers": [0, 0], "notes": "À chiffrer : 2e compteur, 2e SdB/cuisine, accès indépendant.", "dpeApres": "", "vacPct": 0.05, "energie": 1700, "gestionPct": 0}], "retenuId": null, "aDemander": "Faut-il des travaux pour la classe énergétique ? Faisabilité d'une 4ème chambre ou de 2 logements ?"}, {"id": "seed-07", "updatedAt": 1, "titre": "", "ville": "Tours", "quartier": "", "adresse": "", "type": "T5", "surface": 82, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3255910182", "titreAnnonce": "Appartement Tours 135 000 €", "prix": 135000, "honoPct": 0, "notairePct": 0.08, "taxe": 1353, "fiabTaxe": "Confirmée", "copro": 777, "fiabCopro": "Confirmée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "", "ges": "", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "Copro 3017 € − 2240 € refacturés aux locataires = 777 €.\nFacture énergétique entre 1500 et 1800 € : 1400 € après travaux ?", "scenarios": [{"id": "seed-07-a", "nom": "Rafraîchissement", "strategie": "Colocation", "travaux": 15000, "loyers": [450, 450, 450], "notes": "", "dpeApres": "", "vacPct": 0.05, "energie": 1400, "gestionPct": 0}], "retenuId": null, "aDemander": "Confirmer la facture énergétique après travaux (1 500 à 1 800 € aujourd'hui)."}, {"id": "seed-08", "updatedAt": 1, "titre": "", "ville": "Poitiers", "quartier": "", "adresse": "", "type": "T4", "surface": 90, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3202896701", "titreAnnonce": "Appartement 4 pièces 90 m²", "prix": 93000, "honoPct": 0.0634, "notairePct": 0.08, "taxe": 1600, "fiabTaxe": "Estimée", "copro": 3297, "fiabCopro": "Confirmée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "D", "ges": "C", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "Plus de 20 % de négociation nécessaire pour n'avoir que 200 € de cashflow…", "scenarios": [{"id": "seed-08-a", "nom": "En l'état", "strategie": "Colocation", "travaux": 0, "loyers": [400, 400, 400], "notes": "", "dpeApres": "", "vacPct": 0.05, "energie": 1500, "gestionPct": 0}], "retenuId": null, "aDemander": "Confirmer la taxe foncière. Marge de négociation du vendeur ?"}, {"id": "seed-09", "updatedAt": 1, "titre": "", "ville": "Poitiers", "quartier": "", "adresse": "", "type": "T6", "surface": 106, "lien": "https://www.leboncoin.fr/ad/ventes_immobilieres/3245439804", "titreAnnonce": "Appartement 6 pièces 106 m²", "prix": 129000, "honoPct": 0, "notairePct": 0.08, "taxe": 1600, "fiabTaxe": "Estimée", "copro": 3745, "fiabCopro": "Confirmée", "pno": 200, "apport": 13000, "taux": 0.035, "duree": 20, "dpe": "E", "ges": "D", "statut": "À étudier", "contacte": "Non contacté", "dateVisite": "", "notePerso": "", "contactAgence": "", "commentaires": "Entre 2580 et 3540 € de facture énergétique → travaux pour passer vers 1700 €.\nSoit en C : double vitrage PVC (sauf une).", "scenarios": [{"id": "seed-09-a", "nom": "Rafraîchissement + isolation", "strategie": "Colocation", "travaux": 20000, "loyers": [400, 400, 400, 400], "notes": "", "dpeApres": "C", "vacPct": 0.05, "energie": 1700, "gestionPct": 0}], "retenuId": null, "aDemander": "Détail des travaux d'isolation à prévoir pour passer en C. Confirmer la taxe foncière."}];</script>
+<script>
+/* ============================================================
+   1. CONSTANTES
+   ============================================================ */
+const LS_KEY = 'rampeLancement:v1';
+const STRATEGIES = ['À définir','Location nue','Location meublée','Colocation','Immeuble de rapport','Division','Courte durée'];
+const STATUTS = ['À étudier','À visiter','Visité','Offre faite','Offre acceptée','Refusé','Abandonné'];
+const CONTACTS = ['Non contacté','Contacté','Répondu','Sans réponse','RDV pris'];
+const TYPES = ['Studio','T1','T2','T3','T4','T5','T6','T7+','Maison','Immeuble','Local commercial'];
+const FIAB = ['Estimée','Confirmée'];
+const DPE_L = ['','A','B','C','D','E','F','G','Non communiqué','Vierge / en cours'];
+const DPE_APRES = ['Inchangé','A','B','C','D','E','F','G'];
+const DPE_COL = {A:['#2E7D32','#fff'],B:['#66BB6A','#0F2916'],C:['#C6E152','#2B3400'],D:['#FFF176','#4A3B00'],E:['#FFB74D','#4A2C00'],F:['#FF7043','#3B0F00'],G:['#C62828','#fff']};
+const STATUT_PILL = {'À étudier':'gray','À visiter':'blue','Visité':'purple','Offre faite':'amber','Offre acceptée':'green','Refusé':'gray','Abandonné':'gray'};
+const CONTACT_PILL = {'Non contacté':'gray','Contacté':'blue','Répondu':'green','Sans réponse':'amber','RDV pris':'green'};
+const STRAT_PILL = {'Location nue':'blue','Location meublée':'teal','Colocation':'purple','Immeuble de rapport':'gold','Division':'amber','Courte durée':'red','À définir':'gray'};
+const DEF_CRIT = {cibleParLogement: 200, negoMax: 0.25};
+function crit(){ return Object.assign({}, DEF_CRIT, (state.def && state.def.crit) || {}); }
+/** Apport personnel, identique pour tous les biens. */
+function apport(){ const a = state.def && state.def.apport; return a == null ? 13000 : n(a); }
+const USERS = ['Mathis','Papa','Maman'];
+
+/* ============================================================
+   2. ÉTAT
+   ============================================================ */
+/* Certains contextes (aperçu en iframe sans même origine, navigation privée
+   stricte) font échouer l'accès à localStorage — parfois dès la lecture de la
+   propriété. Tout passe donc par ces deux fonctions, qui ne lèvent jamais. */
+let stockageOK = true;
+
+/* L'app peut être affichée dans un cadre isolé (l'aperçu d'une conversation,
+   un lecteur intégré). Ces cadres bloquent les scripts externes et souvent le
+   stockage : autant le dire clairement plutôt que de laisser croire à une
+   panne de réseau. */
+const dansCadre = (() => { try{ return window.top !== window.self; }catch(e){ return true; } })();
+
+function lsGet(k){
+  try{ return window.localStorage.getItem(k); }
+  catch(e){ stockageOK = false; return null; }
+}
+function lsSet(k, v){
+  try{ window.localStorage.setItem(k, v); return true; }
+  catch(e){ stockageOK = false; return false; }
+}
+
+let state = {biens:[], deletedIds:[], migrations:[], updatedAt:0, lastEditBy:''};
+let who = lsGet(LS_KEY+':who') || 'Mathis';
+let view = 'liste', currentId = null, cmpSort = {k:'cashflow', dir:-1};
+/* Le contact agence ne s'affiche sur les cartes que quand il est pertinent :
+   quand on trie par contact (le regroupement, lui, le met déjà en en-tête). */
+let afficherContact = false;
+
+/* ESPACE GÉRANT
+   L'application s'ouvre verrouillée : tout est lisible, rien n'est modifiable.
+   Seul le mot de passe gérant rend la modification possible, et le déverrouillage
+   reste mémorisé sur cet appareil jusqu'à ce qu'on reverrouille.
+
+   Le mot de passe n'est pas écrit dans le fichier, seulement son empreinte.
+   C'est une serrure, pas un coffre-fort : quelqu'un de déterminé peut la forcer.
+   La vraie protection viendra des règles de la base Firebase. */
+function empreinte(txt){
+  let h = 0x811c9dc5;
+  for(let i = 0; i < txt.length; i++){
+    h ^= txt.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+const CODE_GERANT = '83b71278';
+let gerant = lsGet(LS_KEY + ':gerant') === CODE_GERANT;
+let lectureSeule = !gerant;
+
+function appliquerLectureSeule(){
+  document.body.classList.toggle('lecture', lectureSeule);
+  if(!lectureSeule) return;
+  document.querySelectorAll('.wrap input, .wrap select, .wrap textarea')
+    .forEach(el => { if(!['q','tri','grp','fStatut','fQuestions','mdpGerant','expTxt','impTxt']
+                          .includes(el.id)) el.disabled = true; });
+}
+
+/* Chaque frappe est enregistrée aussitôt (rien ne se perd si l'onglet se ferme).
+   Pour pouvoir annuler, on garde en mémoire l'état d'avant la première
+   modification, tant que l'utilisateur n'a pas confirmé. Volontairement non
+   persisté : au rechargement, ce qui est saisi est acquis. */
+const snaps = {biens: {}, scenarios: {}};
+const CHAMPS_BIEN = ['titre','ville','quartier','adresse','type','surface','lien','titreAnnonce',
+  'prix','honoPct','notairePct','taxe','fiabTaxe','copro','fiabCopro','pno','taux','duree',
+  'dpe','ges','statut','contacte','dateVisite','notePerso','contactAgence','aDemander','commentaires'];
+
+function noterBien(b){
+  if(snaps.biens[b.id]) return;
+  const c = {}; CHAMPS_BIEN.forEach(k => c[k] = b[k]);
+  snaps.biens[b.id] = c;
+  const el = document.getElementById('eb-bien'); if(el) el.hidden = false;
+}
+function noterScenario(b, s){
+  if(snaps.scenarios[s.id]) return;
+  snaps.scenarios[s.id] = JSON.parse(JSON.stringify(s));
+  const el = document.getElementById('eb-' + s.id); if(el) el.hidden = false;
+}
+function oublierSnaps(){
+  for(const k in snaps.biens) delete snaps.biens[k];
+  for(const k in snaps.scenarios) delete snaps.scenarios[k];
+}
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const now = () => Date.now();
+
+/* ============================================================
+   3. MOTEUR DE CALCUL
+   ============================================================ */
+function n(x){ const v = parseFloat(x); return isFinite(v) ? v : 0; }
+
+function pmt(capital, tauxAnnuel, annees){
+  const m = n(tauxAnnuel)/12, k = n(annees)*12;
+  if(capital <= 0 || k <= 0) return 0;
+  if(m === 0) return capital/k;
+  return capital * m / (1 - Math.pow(1+m, -k));
+}
+function pv(mensualite, tauxAnnuel, annees){
+  const m = n(tauxAnnuel)/12, k = n(annees)*12;
+  if(mensualite <= 0 || k <= 0) return 0;
+  if(m === 0) return mensualite*k;
+  return mensualite * (1 - Math.pow(1+m, -k)) / m;
+}
+
+/** Calcule tous les indicateurs d'un couple (bien, scénario). */
+function calc(b, s){
+  const prix       = n(b.prix);
+  const prixFAI    = prix * (1 + n(b.honoPct));
+  const notaire    = prixFAI * n(b.notairePct);
+  const travaux    = n(s.travaux);
+  const coutTotal  = prixFAI + notaire + travaux;
+
+  const loyerMois  = (s.loyers||[]).reduce((a,x)=>a+n(x), 0);
+  const loyerAn    = loyerMois * 12;
+
+  const vacance    = loyerAn * n(s.vacPct);
+  const gestion    = loyerAn * n(s.gestionPct);
+  // charges fixes du bien + charges propres au scénario (énergie, vacance, gestion)
+  const charges    = n(b.taxe) + n(b.copro) + n(b.pno) + vacance + n(s.energie) + gestion;
+
+  // Le prêt couvre tout le coût d'acquisition, travaux compris, moins l'apport.
+  const emprunt    = Math.max(0, coutTotal - apport());
+  const mens       = pmt(emprunt, b.taux, b.duree);
+  const interets   = emprunt > 0 ? mens * n(b.duree) * 12 - emprunt : 0;
+
+  // Rentabilité = loyer annuel / prix total payé pour avoir le bien
+  // (prix + honoraires d'agence + notaire + travaux).
+  const renta      = coutTotal > 0 ? loyerAn / coutTotal : 0;
+  const cashflow   = loyerMois - mens - charges/12;
+  const rendtTrav  = coutTotal > 0 ? travaux / coutTotal : 0;
+
+  const C          = crit();
+  const nbLog      = Math.max(1, n(s.nbLogements) || 1);
+  const cibleCF    = C.cibleParLogement * nbLog;
+
+  const fiable = b.fiabTaxe === 'Confirmée' && b.fiabCopro === 'Confirmée';
+
+  // Négociation : prix max du bien pour atteindre chaque cashflow cible
+  const prixPour = cible => {
+    const mensMax    = loyerMois - charges/12 - cible;
+    const empruntMax = mensMax > 0 ? pv(mensMax, b.taux, b.duree) : 0;
+    const coutMax    = empruntMax + apport();
+    // Seul le prix du bien se négocie ; honoraires et notaire suivent mécaniquement.
+    const denom      = (1 + n(b.honoPct)) * (1 + n(b.notairePct));
+    const prixMax    = denom > 0 ? Math.max(0, (coutMax - travaux) / denom) : 0;
+    return {cible, mensMax: Math.max(0, mensMax), empruntMax, coutMax, prixMax,
+            ecart: prixMax - prix, pct: prix > 0 ? (prixMax - prix)/prix : 0};
+  };
+
+  // Combien faut-il négocier pour atteindre l'objectif de ce scénario ?
+  const objectif   = prixPour(cibleCF);
+  const negoNeed   = -objectif.pct;                       // 0,18 = il faut obtenir −18 %
+  const verdict =
+      coutTotal === 0        ? {t:'—', c:'gray'}
+    : objectif.pct >= 0      ? {t:'✅ Objectif atteint au prix affiché', c:'green'}
+    : negoNeed <= C.negoMax  ? {t:'🟡 Négociable : −' + Math.round(negoNeed*100) + ' %', c:'amber'}
+                             : {t:'🔴 Hors cible : −' + Math.round(negoNeed*100) + ' % nécessaires', c:'red'};
+
+  const nego = [0, cibleCF, cibleCF + 150, cibleCF + 300].map(cible => {
+    return Object.assign(prixPour(cible), {estObjectif: cible === cibleCF});
+  });
+
+  return {prixFAI, notaire, travaux, coutTotal, loyerMois, loyerAn, vacance, gestion,
+          charges, emprunt, mens, interets, renta, cashflow,
+          rendtTrav, verdict, fiable, nego, nbLog, cibleCF, objectif, negoNeed,
+          prixM2: n(b.surface) > 0 ? prixFAI / n(b.surface) : 0};
+}
+
+/** Scénario retenu d'un bien (celui marqué, sinon le meilleur cashflow). */
+function scenarioRetenu(b){
+  if(!b.scenarios || !b.scenarios.length) return null;
+  const m = b.scenarios.find(s => s.id === b.retenuId);
+  if(m) return m;
+  let best = b.scenarios[0], bc = calc(b, best).cashflow;
+  for(const s of b.scenarios){ const c = calc(b, s).cashflow; if(c > bc){ bc = c; best = s; } }
+  return best;
+}
+
+/* ============================================================
+   4. FORMATAGE
+   ============================================================ */
+const nfEur = new Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR', maximumFractionDigits:0});
+const eur = v => nfEur.format(Math.round(n(v)));
+const eurS = v => (n(v) >= 0 ? '+' : '') + nfEur.format(Math.round(n(v)));
+const pct = v => (n(v)*100).toFixed(2).replace('.', ',') + ' %';
+const pctS = v => (n(v) >= 0 ? '+' : '') + (n(v)*100).toFixed(1).replace('.', ',') + ' %';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cls = v => n(v) >= 0 ? 'pos' : 'neg';
+
+/** Ne garde que les chiffres d'un texte, et ramène un +33 / 0033 à un 0 initial.
+ *  Permet de retrouver « 06 12 34 56 78 » en tapant « 0612345678 » et l'inverse. */
+function chiffres(txt){
+  let d = String(txt || '').replace(/\D/g, '');
+  if(d.startsWith('0033')) d = '0' + d.slice(4);
+  else if(d.startsWith('33') && d.length === 11) d = '0' + d.slice(2);
+  return d;
+}
+
+/** Clé d'identité d'un contact agence : le numéro s'il y en a un (donc insensible
+ *  au formatage), sinon le texte. Deux biens confiés au même agent tombent dans
+ *  le même groupe même si le numéro n'est pas écrit pareil. */
+function cleContact(b){
+  const brut = (b.contactAgence || '').trim();
+  if(!brut) return '';
+  const d = chiffres(brut);
+  return d.length >= 6 ? d : brut.toLowerCase();
+}
+
+/** Titre lisible et discriminant, généré si l'utilisateur n'en impose pas un. */
+function titre(b){
+  if(b.titre && b.titre.trim()) return b.titre.trim();
+  const p = [];
+  if(b.ville) p.push(b.ville);
+  if(b.quartier) p.push(b.quartier);
+  const ts = [b.type, n(b.surface) ? Math.round(n(b.surface))+' m²' : ''].filter(Boolean).join(' ');
+  if(ts) p.push(ts);
+  if(n(b.prix)) p.push(Math.round(n(b.prix)/1000) + ' k€');
+  return p.join(' · ') || 'Nouveau bien';
+}
+
+function dpeBadge(l){
+  if(!l || !DPE_COL[l]) return `<span class="pill gray">${esc(l||'—')}</span>`;
+  const [bg, fg] = DPE_COL[l];
+  return `<span class="dpe" style="background:${bg};color:${fg}">${esc(l)}</span>`;
+}
+
+/* ============================================================
+   5. PERSISTANCE
+   ============================================================ */
+(function testerStockage(){
+  if(!lsSet(LS_KEY + ':test', '1')) return;
+  try{ window.localStorage.removeItem(LS_KEY + ':test'); }catch(e){ stockageOK = false; }
+})();
+
+function persistLocal(){
+  if(!stockageOK) return;
+  lsSet(LS_KEY, JSON.stringify(state));
+}
+function commit(){
+  state.updatedAt = now();
+  state.lastEditBy = who;
+  persistLocal();
+  if(window.pushState) window.pushState();
+  render();
+}
+function touch(b){ b.updatedAt = now(); }
+
+/** Confirmation intégrée à la page.
+ *  Le confirm() natif est bloqué dans les aperçus en iframe (le chat, certains
+ *  navigateurs mobiles) : la suppression échouait alors sans rien dire. */
+function demander(message, labelOk){
+  return new Promise(resolve => {
+    const ov = document.getElementById('modal');
+    ov.innerHTML = `<div class="modal-box">
+      <p>${esc(message)}</p>
+      <div class="modal-act">
+        <button class="btn" data-r="0">Annuler</button>
+        <button class="btn danger-solid" data-r="1">${esc(labelOk || 'Supprimer')}</button>
+      </div>
+    </div>`;
+    ov.classList.add('on');
+    const fin = ok => { ov.classList.remove('on'); ov.innerHTML = ''; document.removeEventListener('keydown', esc2); resolve(ok); };
+    const esc2 = e => { if(e.key === 'Escape') fin(false); };
+    document.addEventListener('keydown', esc2);
+    ov.onclick = e => { if(e.target === ov) fin(false); };
+    ov.querySelectorAll('button').forEach(btn =>
+      btn.onclick = () => fin(btn.dataset.r === '1'));
+    const ok = ov.querySelector('[data-r="1"]'); if(ok) ok.focus();
+  });
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('on'), 2200);
+}
+
+/* ============================================================
+   6. MODÈLES
+   ============================================================ */
+function nouveauScenario(base){
+  return Object.assign({
+    id: uid(), nom: 'Nouveau scénario', strategie: 'À définir',
+    travaux: 0, loyers: [0], nbLogements: 1, notes: '', dpeApres: 'Inchangé',
+    vacPct: 0.05, energie: 0, gestionPct: 0
+  }, base || {}, {id: uid()});
+}
+function nouveauBienObj(){
+  return {
+    id: uid(), updatedAt: now(),
+    titre: '', ville: '', quartier: '', adresse: '', type: 'T3', surface: 0,
+    lien: '', titreAnnonce: '',
+    prix: 0, honoPct: 0, notairePct: 0.08,
+    taxe: 0, fiabTaxe: 'Estimée', copro: 0, fiabCopro: 'Estimée', pno: 200,
+    taux: 0.035, duree: 20,
+    dpe: '', ges: '',
+    statut: 'À étudier', contacte: 'Non contacté', dateVisite: '', notePerso: '',
+    contactAgence: '', aDemander: '', commentaires: '',
+    scenarios: [Object.assign(nouveauScenario(), {nom: 'Rafraîchissement', strategie: 'Colocation'})],
+    retenuId: null
+  };
+}
+
+/* ============================================================
+   7. RENDU — LISTE
+   ============================================================ */
+function biensFiltres(){
+  const q = (document.getElementById('q').value || '').toLowerCase().trim();
+  const fs = document.getElementById('fStatut').value;
+  let arr = state.biens.filter(b => {
+    if(fs && b.statut !== fs) return false;
+    if(document.getElementById('fQuestions').value && !(b.aDemander||'').trim()) return false;
+    if(!q) return true;
+    const texte = [titre(b), b.ville, b.quartier, b.adresse, b.titreAnnonce,
+                   b.commentaires, b.aDemander, b.contactAgence]
+      .filter(Boolean).join(' ');
+    if(texte.toLowerCase().includes(q)) return true;
+    // recherche par numéro : on compare chiffre à chiffre, quel que soit le formatage
+    const qd = chiffres(q);
+    if(qd.length < 4) return false;
+    const tel = chiffres([b.contactAgence, b.commentaires, b.aDemander].filter(Boolean).join(' '));
+    return tel.includes(qd);
+  });
+  const tri = document.getElementById('tri').value;
+  const key = b => {
+    const s = scenarioRetenu(b); if(!s) return 0;
+    const r = calc(b, s);
+    return {cashflow: -r.cashflow, brute: -r.renta}[tri] ?? 0;
+  };
+  if(tri === 'contact') arr.sort((a, b) => {
+    // les biens du même agent se retrouvent côte à côte, sans contact à la fin
+    const ka = cleContact(a) || '\uffff', kb = cleContact(b) || '\uffff';
+    return ka === kb ? titre(a).localeCompare(titre(b), 'fr') : ka.localeCompare(kb, 'fr');
+  });
+  else arr.sort((a,b)=>key(a)-key(b));
+  return arr;
+}
+
+function renderListe(){
+  // KPI
+  const rs = state.biens.map(b => { const s = scenarioRetenu(b); return s ? calc(b,s) : null; }).filter(Boolean);
+  const posit = rs.filter(r => r.cashflow >= 0).length;
+  const bestN = rs.length ? Math.max(...rs.map(r=>r.renta)) : 0;
+  const bestC = rs.length ? Math.max(...rs.map(r=>r.cashflow)) : 0;
+  const nbSc  = state.biens.reduce((a,b)=>a+(b.scenarios||[]).length, 0);
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><small>Biens</small><b>${state.biens.length}</b></div>
+    <div class="kpi"><small>Scénarios</small><b>${nbSc}</b></div>
+    <div class="kpi"><small>Cashflow positif</small><b class="${posit?'pos':''}">${posit}</b></div>
+    <div class="kpi"><small>Meilleure rentabilité</small><b>${pct(bestN)}</b></div>
+    <div class="kpi"><small>Meilleur cashflow</small><b class="${cls(bestC)}">${eurS(bestC)}</b></div>`;
+
+  const arr = biensFiltres();
+  const grid = document.getElementById('grid');
+  if(!arr.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">Aucun bien ne correspond.<br><br>
+      <button class="btn primary" onclick="App.nouveauBien()">＋ Ajouter un bien</button></div>`;
+    grid.className = 'mgrid';
+    return;
+  }
+
+  afficherContact = document.getElementById('tri').value === 'contact';
+
+  const g = document.getElementById('grp').value;
+  if(!g){ grid.className = 'mgrid'; grid.innerHTML = arr.map(carteBien).join(''); return; }
+
+  const groupeDe = b => {
+    if(g === 'statut')    return b.statut || 'Sans étape';
+    if(g === 'ville')     return b.ville || 'Ville non renseignée';
+    if(g === 'fiab')      return calc(b, scenarioRetenu(b)).fiable ? '✅ Chiffres confirmés' : '⚠️ Encore estimé';
+    if(g === 'contact')   return cleContact(b) || 'Sans contact';
+    const s = scenarioRetenu(b); return s ? s.strategie : 'À définir';
+  };
+  const ordre = g === 'statut' ? STATUTS : null;
+  const groupes = new Map(), libelles = new Map();
+  for(const b of arr){
+    const k = groupeDe(b);
+    if(!groupes.has(k)){
+      groupes.set(k, []);
+      // pour un contact, on affiche l'orthographe telle que saisie la 1re fois
+      libelles.set(k, g === 'contact' ? ((b.contactAgence||'').trim() || 'Sans contact') : k);
+    }
+    groupes.get(k).push(b);
+  }
+  const cles = ordre
+    ? ordre.filter(k => groupes.has(k)).concat([...groupes.keys()].filter(k => !ordre.includes(k)))
+    : [...groupes.keys()].sort((a,b)=>String(a).localeCompare(String(b),'fr'));
+
+  grid.className = 'groupes';
+  grid.innerHTML = cles.map(k => {
+    const bs = groupes.get(k);
+    const cfs = bs.map(b => calc(b, scenarioRetenu(b)).cashflow);
+    const best = Math.max(...cfs);
+    return `<section class="grp">
+      <div class="grp-h">
+        <b>${esc(libelles.get(k) || k)}</b>
+        <span class="pill gray">${bs.length} bien${bs.length>1?'s':''}</span>
+        <span class="pill ${best>=0?'green':'gray'}">meilleur ${eurS(best)}/mois</span>
+      </div>
+      <div class="mgrid">${bs.map(carteBien).join('')}</div>
+    </section>`;
+  }).join('');
+}
+
+/** Ligne « contact agence » d'une carte, avec le numéro cliquable. */
+function contactLigne(b){
+  const brut = (b.contactAgence || '').trim();
+  if(!brut) return `<div class="contact-l vide">📞 Pas de contact renseigné</div>`;
+  const tel = chiffres(brut);
+  const num = tel.length >= 9
+    ? `<a href="tel:${esc(tel)}" onclick="event.stopPropagation()">${esc(brut)}</a>`
+    : esc(brut);
+  return `<div class="contact-l">📞 ${num}</div>`;
+}
+
+function carteBien(b){
+  return (b => {
+    const s = scenarioRetenu(b);
+    const r = s ? calc(b, s) : null;
+    const col = r ? {green:'var(--green)', amber:'var(--amber)', red:'var(--red)', gray:'var(--gray)'}[r.verdict.c] : 'var(--gray)';
+    const nsc = (b.scenarios||[]).length;
+    // le titre reste celui que Mathis reconnaît ; l'intitulé de l'annonce passe
+    // en seconde ligne grise, comme le détail d'une annonce
+    const carac = [b.type, n(b.surface) ? Math.round(n(b.surface)) + ' m²' : ''].filter(Boolean).join(' · ');
+    const ligne2 = b.titreAnnonce || carac || '—';
+    return `<div class="mcard" onclick="App.ouvrir('${b.id}')">
+      <div class="bande" style="background:${col}"></div>
+      <h3>${esc(titre(b))}</h3>
+      <div class="prix">${n(b.prix) ? eur(b.prix) : '—'}</div>
+      <div class="lieu">${esc(ligne2)}</div>
+      <div class="mc-top">
+        <span class="pill ${STATUT_PILL[b.statut]||'gray'}">${esc(b.statut)}</span>
+        <span class="pill ${CONTACT_PILL[b.contacte]||'gray'}">${esc(b.contacte)}</span>
+        ${b.dpe && DPE_COL[b.dpe] ? dpeBadge(b.dpe) : ''}
+        ${nsc > 1 ? `<span class="pill purple">${nsc} scénarios</span>` : ''}
+        ${(b.aDemander||'').trim() ? `<span class="pill amber" title="${esc(b.aDemander)}">❓ À demander</span>` : ''}
+      </div>
+      <div class="sub">${esc(s ? s.nom : 'Aucun scénario')}${s ? ' · ' + esc(s.strategie) : ''}</div>
+      ${afficherContact ? contactLigne(b) : ''}
+      ${r ? `<div class="mc-nums">
+        <div><span>Cashflow</span><b class="${cls(r.cashflow)}">${eurS(r.cashflow)}</b></div>
+        <div><span>Rentabilité</span><b>${pct(r.renta)}</b></div>
+        <div><span>Travaux</span><b>${eur(r.travaux)}</b></div>
+        <div><span>Prix/m²</span><b>${r.prixM2 ? eur(r.prixM2) : '—'}</b></div>
+        <div><span>Coût total</span><b>${eur(r.coutTotal)}</b></div>
+      </div>
+      <div class="verdict ${r.verdict.c}"><b>${r.verdict.t}</b>${
+        r.negoNeed > 0 ? `<span>${eur(r.cibleCF)}/mois \u2192 acheter à ${eur(r.objectif.prixMax)}</span>` : ''}</div>` : ''}
+    </div>`;
+  })(b);
+}
+
+/* ============================================================
+   8. RENDU — FICHE DÉTAIL
+   ============================================================ */
+function sel(val, list, oninput){
+  return `<select oninput="${oninput}">` + list.map(o =>
+    `<option${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('') + `</select>`;
+}
+function fld(label, inner, hint){
+  return `<div class="field"><label>${label}</label>${inner}${hint?`<span class="hint">${hint}</span>`:''}</div>`;
+}
+/** Un champ numérique à zéro s'affiche vide, avec 0 en filigrane : plus besoin
+ *  d'effacer le 0 avant de taper. Une valeur vide vaut zéro dans les calculs. */
+function inp(val, oninput, type, attrs){
+  let v = esc(val), extra = attrs || '';
+  if(type === 'number' && (val === 0 || /^0(\.0+)?$/.test(String(val)))){
+    v = ''; extra += ' placeholder="0"';
+  }
+  return `<input type="${type||'text'}" value="${v}" ${extra} oninput="${oninput}">`;
+}
+
+function renderDetail(){
+  const b = state.biens.find(x => x.id === currentId);
+  if(!b){ view = 'liste'; render(); return; }
+  const S = `App.setB('${b.id}',`;   // helper prefix
+
+  const scenarios = b.scenarios || [];
+  const meilleurCF = scenarios.length > 1
+    ? Math.max(...scenarios.map(x => calc(b, x).cashflow)) : null;
+  const retenu = scenarioRetenu(b);
+  const rr = retenu ? calc(b, retenu) : null;
+
+  document.getElementById('v-detail').innerHTML = `
+  <button class="back" onclick="App.retour()">← Tous les biens</button>
+
+  <div class="panel">
+    <div class="det-head">
+      <h2>${esc(titre(b))}</h2>
+      ${rr ? `<span class="pill ${rr.verdict.c}">${rr.verdict.t}</span>` : ''}
+      ${rr ? `<span class="pill ${rr.fiable?'green':'amber'}">${rr.fiable?'✅ Confirmée':'⚠️ Estimée'}</span>` : ''}
+    </div>
+    ${b.titreAnnonce ? `<div class="ann">Annonce : ${esc(b.titreAnnonce)}</div>` : ''}
+    ${b.lien ? `<div class="ann"><a href="${esc(b.lien)}" target="_blank" rel="noopener" style="color:var(--navy2);font-weight:700">🔗 Ouvrir l'annonce</a></div>` : ''}
+    <div class="editbar" id="eb-bien" ${snaps.biens[b.id] ? '' : 'hidden'}>
+      <span>Modifications non confirmées sur la fiche</span>
+      <button class="btn sm" onclick="App.annulerBien('${b.id}')">↩ Annuler</button>
+      <button class="btn sm primary" onclick="App.confirmerBien('${b.id}')">✓ Confirmer</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Identité</h2>
+    <div class="fgrid">
+      ${fld('Ville', inp(b.ville, S+`'ville',this.value)`))}
+      ${fld('Quartier / rue', inp(b.quartier, S+`'quartier',this.value)`), 'Sert au titre de la fiche')}
+      ${fld('Type', sel(b.type, TYPES, S+`'type',this.value)`))}
+      ${fld('Surface (m²)', inp(b.surface, S+`'surface',this.value)`, 'number', 'step="1" min="0"'))}
+      ${fld('Lien annonce', inp(b.lien, S+`'lien',this.value)`, 'url'))}
+      ${fld("Titre de l'annonce", inp(b.titreAnnonce, S+`'titreAnnonce',this.value)`), 'Le titre Leboncoin, gardé pour mémoire')}
+      ${fld('DPE', sel(b.dpe, DPE_L, S+`'dpe',this.value)`))}
+      ${fld('GES', sel(b.ges, DPE_L, S+`'ges',this.value)`))}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Acquisition &amp; financement <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">— commun à tous les scénarios</span></h2>
+    <div class="fgrid">
+      ${fld('Prix du bien (hors agence)', inp(b.prix, S+`'prix',this.value)`, 'number', 'step="500" min="0"'))}
+      ${fld('Honoraires agence (%)', inp((n(b.honoPct)*100).toFixed(2), S+`'honoPct',this.value/100)`, 'number', 'step="0.01" min="0"'))}
+      ${fld('Frais de notaire (%)', inp((n(b.notairePct)*100).toFixed(2), S+`'notairePct',this.value/100)`, 'number', 'step="0.1" min="0"'))}
+      ${fld('Taux du prêt (%)', inp((n(b.taux)*100).toFixed(2), S+`'taux',this.value/100)`, 'number', 'step="0.05" min="0"'))}
+      ${fld('Durée (années)', inp(b.duree, S+`'duree',this.value)`, 'number', 'step="1" min="1"'))}
+      ${fld('Apport', `<div class="readonly">${eur(apport())}</div>`, 'Identique pour tous les biens, modifiable dans Réglages')}
+      ${fld('Prix FAI', `<div class="readonly">${rr ? eur(rr.prixFAI) : '—'}</div>`)}
+      ${fld('Prix / m² (FAI)', `<div class="readonly">${rr && rr.prixM2 ? eur(rr.prixM2) : '—'}</div>`)}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Charges fixes du bien <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">— identiques quel que soit le scénario</span></h2>
+    <div class="fgrid">
+      ${fld('Taxe foncière (€/an)', inp(b.taxe, S+`'taxe',this.value)`, 'number', 'step="10" min="0"'))}
+      ${fld('Fiabilité de la taxe', sel(b.fiabTaxe, FIAB, S+`'fiabTaxe',this.value)`))}
+      ${fld('Charges de copropriété (€/an)', inp(b.copro, S+`'copro',this.value)`, 'number', 'step="10" min="0"'), 'Part propriétaire uniquement')}
+      ${fld('Fiabilité des charges', sel(b.fiabCopro, FIAB, S+`'fiabCopro',this.value)`))}
+      ${fld('Assurance PNO (€/an)', inp(b.pno, S+`'pno',this.value)`, 'number', 'step="10" min="0"'))}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Scénarios <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">— ${lectureSeule ? 'les stratégies envisagées pour ce bien' : 'coche les stratégies que tu envisages pour ce bien'}</span></h2>
+    <div class="strats">
+      ${STRATEGIES.filter(x => x !== 'À définir').map(st => {
+        const nb = scenarios.filter(x => x.strategie === st).length;
+        return `<label class="strat ${nb ? 'on' : ''}">
+          <input type="checkbox" ${nb ? 'checked' : ''} onchange="App.toggleStrategie('${b.id}','${st}',this.checked)">
+          <span>${st}</span>${nb > 1 ? `<b>${nb}</b>` : ''}
+        </label>`;
+      }).join('')}
+    </div>
+    ${scenarios.length ? `<div class="scgrid">
+      ${scenarios.map(s => scenarioCard(b, s, meilleurCF)).join('')}
+    </div>` : `<div class="empty">Coche une ou plusieurs stratégies ci-dessus pour créer les cartes à remplir.</div>`}
+  </div>
+
+  ${retenu ? negoPanel(b, retenu) : ''}
+
+  <div class="panel">
+    <h2>Suivi du dossier</h2>
+    <div class="fgrid">
+      ${fld('Statut', sel(b.statut, STATUTS, S+`'statut',this.value)`))}
+      ${fld('Prise de contact', sel(b.contacte, CONTACTS, S+`'contacte',this.value)`))}
+      ${fld('Date de visite', inp(b.dateVisite, S+`'dateVisite',this.value)`, 'date'))}
+      ${fld('Contact agence (nom, téléphone)', inp(b.contactAgence, S+`'contactAgence',this.value)`), 'Recherchable au numéro, avec ou sans espaces')}
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>À demander</label>
+      <textarea oninput="${S}'aDemander',this.value)" placeholder="Ce qu'il reste à poser comme questions : parking, historique locatif, montant exact de la taxe foncière, travaux votés en copropriété, est-ce loué…">${esc(b.aDemander || '')}</textarea>
+      <span class="hint">Vide cette case au fur et à mesure des réponses de l'agence</span>
+    </div>
+
+    <div class="field" style="margin-top:10px">
+      <label>Commentaires</label>
+      <textarea oninput="${S}'commentaires',this.value)" placeholder="Ce qu'il faut vérifier, ce que dit l'agence, les pistes de travaux…">${esc(b.commentaires)}</textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" onclick="App.dupliquerBien('${b.id}')">⧉ Dupliquer le bien</button>
+      <button class="btn danger del-bien" style="margin-left:auto" onclick="App.supprimerBien('${b.id}')">🗑 Supprimer ce bien</button>
+    </div>
+  </div>`;
+}
+
+/** Contenu du bloc verdict d'un scénario — partagé entre le rendu complet
+ *  et la mise à jour en cours de frappe, pour qu'ils ne divergent jamais. */
+function verdictHTML(b, r){
+  return `<b>${r.verdict.t}</b>` + (r.negoNeed > 0
+    ? `<span>Prix à obtenir pour ${eur(r.cibleCF)}/mois : <b>${eur(r.objectif.prixMax)}</b> — affiché ${eur(n(b.prix))}</span>`
+    : '');
+}
+
+function scenarioCard(b, s, meilleurCF){
+  const r = calc(b, s);
+  const estMeilleur = meilleurCF != null && Math.abs(r.cashflow - meilleurCF) < 0.5;
+  const ecart = meilleurCF != null ? r.cashflow - meilleurCF : 0;
+  const S = `App.setS('${b.id}','${s.id}',`;
+  const est = b.retenuId === s.id;
+  const loyers = (s.loyers && s.loyers.length ? s.loyers : [0]);
+  return `<div class="sc ${est?'retenu':''}">
+    <div class="sc-head">
+      <input value="${esc(s.nom)}" oninput="${S}'nom',this.value)" placeholder="Nom du scénario">
+      <button class="btn sm" title="${est?'Scénario retenu':'Marquer comme retenu'}" onclick="App.retenir('${b.id}','${s.id}')">${est?'★':'☆'}</button>
+    </div>
+    ${meilleurCF != null ? (estMeilleur
+        ? `<span class="pill gold" style="align-self:flex-start">🏆 Meilleur cashflow</span>`
+        : `<span class="pill gray" style="align-self:flex-start">${eurS(ecart)} /mois vs le meilleur</span>`) : ''}
+    <div class="field">
+      <label>Stratégie envisagée</label>
+      ${sel(s.strategie, STRATEGIES, S+`'strategie',this.value)`)}
+    </div>
+    <div class="field">
+      <label>Travaux prévus (€)</label>
+      ${inp(s.travaux, S+`'travaux',this.value)`, 'number', 'step="500" min="0"')}
+      <span class="hint h-trav">${r.coutTotal ? (r.rendtTrav*100).toFixed(0)+' % du coût total' : ''}</span>
+    </div>
+    <div class="field">
+      <label>Nombre de logements</label>
+      ${inp(s.nbLogements || 1, S+`'nbLogements',this.value)`, 'number', 'step="1" min="1"')}
+      <span class="hint h-obj">Une coloc de 4 chambres = 1 logement. Objectif de ce scénario : ${eur(r.cibleCF)}/mois</span>
+    </div>
+    <div class="field">
+      <label>Loyers mensuels HC — ${loyers.length} lot${loyers.length>1?'s':''} / chambre${loyers.length>1?'s':''}</label>
+      <div class="loyers">
+        ${loyers.map((L,i)=>`<input type="number" step="10" min="0" placeholder="0" value="${n(L) ? esc(L) : ''}" oninput="App.setLoyer('${b.id}','${s.id}',${i},this.value)">`).join('')}
+        <button class="btn sm" onclick="App.addLoyer('${b.id}','${s.id}')">＋</button>
+        ${loyers.length>1?`<button class="btn sm" onclick="App.delLoyer('${b.id}','${s.id}')">−</button>`:''}
+      </div>
+      <span class="hint h-loyers">Total ${eur(r.loyerMois)}/mois</span>
+    </div>
+
+    <div class="verdict ${r.verdict.c}">${verdictHTML(b, r)}</div>
+
+    <div class="sc-res">
+      <div><span>Cashflow /mois</span><b class="${cls(r.cashflow)}">${eurS(r.cashflow)}</b></div>
+      <div><span>Rentabilité</span><b>${pct(r.renta)}</b></div>
+      <div><span>Mensualité</span><b>${eur(r.mens)}</b></div>
+      <div><span>Loyers /mois</span><b>${eur(r.loyerMois)}</b></div>
+      <div class="wide"><span>Coût total d'acquisition</span><b>${eur(r.coutTotal)}</b></div>
+      <div class="wide"><span>Charges annuelles</span><b>${eur(r.charges)}</b></div>
+    </div>
+
+    <div class="field">
+      <label>Charges énergétiques après travaux (€/an)</label>
+      ${inp(s.energie, S+`'energie',this.value)`, 'number', 'step="50" min="0"')}
+      <span class="hint">Ce que les travaux de ce scénario laissent comme facture</span>
+    </div>
+
+    ${fld('DPE visé après travaux', sel(s.dpeApres || 'Inchangé', DPE_APRES, S+`'dpeApres',this.value)`), 'Actuel : ' + (b.dpe || '—'))}
+
+    <div class="field">
+      <label>Notes du scénario</label>
+      <textarea style="min-height:52px" oninput="${S}'notes',this.value)" placeholder="Nature des travaux, risques, ce qu'il reste à chiffrer…">${esc(s.notes)}</textarea>
+    </div>
+
+    <div class="editbar" id="eb-${s.id}" ${snaps.scenarios[s.id] ? '' : 'hidden'}>
+      <span>Modifications non confirmées</span>
+      <button class="btn sm" onclick="App.annulerScenario('${b.id}','${s.id}')">↩ Annuler</button>
+      <button class="btn sm primary" onclick="App.confirmerScenario('${s.id}')">✓ Confirmer</button>
+    </div>
+
+    <div style="display:flex;gap:6px">
+      <button class="btn sm" title="Créer une variante de ce scénario" onclick="App.dupScenario('${b.id}','${s.id}')">⧉ Variante</button>
+      <button class="btn sm danger del-sc" style="margin-left:auto" title="Supprimer ce scénario" onclick="App.delScenario('${b.id}','${s.id}')">🗑 Supprimer</button>
+    </div>
+  </div>`;
+}
+
+/** Met à jour le tableau de négociation sans reconstruire la page. */
+function majNego(b){
+  const s = scenarioRetenu(b); if(!s) return;
+  const bloc = document.querySelector('#v-detail .panel.nego');
+  if(bloc) bloc.outerHTML = negoPanel(b, s);
+}
+
+function negoPanel(b, s){
+  const r = calc(b, s);
+  return `<div class="panel nego">
+    <h2>Négociation — scénario « ${esc(s.nom)} »</h2>
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:10px">À quel prix acheter pour atteindre chaque objectif de cashflow, travaux et charges de ce scénario compris.</p>
+    <div style="overflow-x:auto"><table>
+      <tr><th>Cashflow visé</th><th>Mensualité max</th><th>Emprunt max</th><th>Coût total max</th><th>Prix max (hors agence)</th><th>Écart vs prix affiché</th><th>Négo</th></tr>
+      ${r.nego.map(x => `<tr${x.estObjectif ? ' style="background:var(--gold-soft)"' : ''}>
+        <td>${x.cible === 0 ? 'Équilibre (0 €)' : eur(x.cible)+' /mois'}${x.estObjectif ? ' 🎯' : ''}</td>
+        <td>${eur(x.mensMax)}</td><td>${eur(x.empruntMax)}</td><td>${eur(x.coutMax)}</td>
+        <td style="font-weight:800">${eur(x.prixMax)}</td>
+        <td class="${cls(x.ecart)}">${eurS(x.ecart)}</td>
+        <td class="${cls(x.ecart)}" style="font-weight:800">${pctS(x.pct)}</td>
+      </tr>`).join('')}
+    </table></div>
+  </div>`;
+}
+
+/* ============================================================
+   9. RENDU — COMPARATEUR
+   ============================================================ */
+const CMP_COLS = [
+  {k:'nom',      t:'Bien / scénario', l:true},
+  {k:'strategie',t:'Stratégie',       l:true},
+  {k:'ville',    t:'Ville',           l:true},
+  {k:'prix',     t:'Prix affiché',    f:eur},
+  {k:'coutTotal',t:'Coût total',      f:eur},
+  {k:'renta',    t:'Rentabilité',     f:pct},
+  {k:'cashflow', t:'Cashflow /mois',  f:eurS, c:true},
+  {k:'prixCible',t:'Prix à obtenir',  f:null},
+  {k:'negoNeed', t:'Négo nécessaire', f:v => v <= 0 ? '✅' : '−' + (v*100).toFixed(0) + ' %'},
+  {k:'statut',   t:'Statut',          l:true}
+];
+
+function lignesCompare(){
+  const out = [];
+  for(const b of state.biens){
+    for(const s of (b.scenarios||[])){
+      const r = calc(b, s);
+      out.push({
+        bienId: b.id, scId: s.id,
+        nom: titre(b) + ' — ' + s.nom,
+        retenu: (b.retenuId ? b.retenuId === s.id : scenarioRetenu(b) === s),
+        strategie: s.strategie, ville: b.ville, statut: b.statut,
+        prix: n(b.prix), travaux: r.travaux, coutTotal: r.coutTotal,
+        loyerMois: r.loyerMois, renta: r.renta,
+        cashflow: r.cashflow, prixM2: r.prixM2, verdict: r.verdict,
+        objectifCF: r.cibleCF, negoNeed: r.negoNeed,
+        // pas de négociation nécessaire → on n'invente pas un prix supérieur
+        prixCible: r.negoNeed > 0 ? r.objectif.prixMax : null
+      });
+    }
+  }
+  const {k, dir} = cmpSort;
+  out.sort((a, b) => {
+    const x = a[k], y = b[k];
+    if(typeof x === 'string' || typeof y === 'string')
+      return String(x||'').localeCompare(String(y||''), 'fr') * dir;
+    return ((x||0) - (y||0)) * dir;
+  });
+  return out;
+}
+
+function renderCompare(){
+  const rows = lignesCompare();
+  const t = document.getElementById('cmp');
+  if(!rows.length){ t.innerHTML = '<tr><td>Aucun scénario.</td></tr>'; return; }
+  t.innerHTML =
+    '<thead><tr>' + CMP_COLS.map(c =>
+      `<th class="${c.l?'l':''}" onclick="App.triCmp('${c.k}')">${c.t}${cmpSort.k===c.k?(cmpSort.dir<0?' ▼':' ▲'):''}</th>`
+    ).join('') + '</tr></thead><tbody>' +
+    rows.map(r => '<tr>' + CMP_COLS.map(c => {
+      if(c.k === 'nom')
+        return `<td class="name" onclick="App.ouvrir('${r.bienId}')">${r.retenu?'★ ':''}${esc(r.nom)}</td>`;
+      if(c.k === 'strategie')
+        return `<td class="l" style="text-align:left"><span class="pill ${STRAT_PILL[r.strategie]||'gray'}">${esc(r.strategie)}</span></td>`;
+      if(c.k === 'statut')
+        return `<td style="text-align:left"><span class="pill ${STATUT_PILL[r.statut]||'gray'}">${esc(r.statut)}</span></td>`;
+      if(c.l) return `<td style="text-align:left">${esc(r[c.k])}</td>`;
+      const v = r[c.k];
+      if(c.k === 'prixCible')
+        return `<td>${v == null ? '<span class="pill green">✅ Prix affiché</span>' : '<b>'+eur(v)+'</b>'}</td>`;
+      return `<td class="${c.c?cls(v):''}" ${c.c?'style="font-weight:800"':''}>${c.f?c.f(v):esc(v)}</td>`;
+    }).join('') + '</tr>').join('') + '</tbody>';
+}
+
+/* ============================================================
+   10. RENDU — RÉGLAGES
+   ============================================================ */
+function renderReglages(){
+  document.getElementById('v-reglages').innerHTML = `
+  <div class="panel">
+    <h2>Sauvegarde &amp; données</h2>
+    <p style="font-size:.86rem;color:var(--muted);margin-bottom:12px">
+      Les données vivent dans la base Firebase, pas dans le fichier de l'app.
+      Mettre l'app à jour ne touche jamais tes biens.
+    </p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="App.exportJSON()">⬇ Exporter (JSON)</button>
+      <button class="btn" onclick="document.getElementById('imp').click()">⬆ Importer un export</button>
+      <input type="file" id="imp" accept="application/json" style="display:none" onchange="App.importJSON(this)">
+      <button class="btn" onclick="App.exportCSV()">⬇ Exporter le comparateur (CSV)</button>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+    <h2 style="margin-bottom:8px">Transfert par copier-coller</h2>
+    <p style="font-size:.86rem;color:var(--muted);margin-bottom:10px">
+      À utiliser quand le téléchargement est impossible — par exemple depuis un aperçu.
+      Le presse-papier, lui, passe partout.
+    </p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn primary" onclick="App.afficherDonnees()">📋 Copier mes données</button>
+      <button class="btn" onclick="App.zoneCollage()">📥 Coller des données</button>
+    </div>
+    <div id="zoneTransfert"></div>
+  </div>
+  <div class="panel">
+    <h2>Mes critères de décision</h2>
+    <p style="font-size:.86rem;color:var(--muted);margin-bottom:12px">
+      C'est ce qui colore les fiches et le comparateur. Règle actuelle :
+      un scénario est <b>hors cible</b> s'il faut négocier plus de ${Math.round(crit().negoMax*100)} %
+      pour atteindre ${eur(crit().cibleParLogement)} de cashflow par logement et par mois.
+    </p>
+    <div class="fgrid">
+      ${fld('Cashflow minimum par logement (€/mois)', inp(crit().cibleParLogement, `App.setCrit('cibleParLogement',this.value)`, 'number', 'step="25" min="0"'), 'Un immeuble de 3 appartements vise donc 3 × ce montant')}
+      ${fld('Négociation maximale acceptable (%)', inp((crit().negoMax*100).toFixed(0), `App.setCrit('negoMax',this.value/100)`, 'number', 'step="1" min="0" max="90"'), 'Au-delà, le bien est marqué hors cible')}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Hypothèses par défaut d'un nouveau bien</h2>
+    <div class="fgrid">
+      ${fld('Frais de notaire (%)', inp((((state.def&&state.def.notairePct)||0.08)*100).toFixed(2), `App.setDef('notairePct',this.value/100)`, 'number', 'step="0.1"'))}
+      ${fld('Taux du prêt (%)', inp((((state.def&&state.def.taux)||0.035)*100).toFixed(2), `App.setDef('taux',this.value/100)`, 'number', 'step="0.05"'))}
+      ${fld('Durée (années)', inp((state.def&&state.def.duree)||20, `App.setDef('duree',this.value)`, 'number', 'step="1"'))}
+      ${fld('Apport personnel', inp(apport(), `App.setDef('apport',this.value)`, 'number', 'step="500"'), 'Identique pour tous les biens')}
+      ${fld('Vacance &amp; entretien (%)', inp((((state.def&&state.def.vacPct)||0.05)*100).toFixed(1), `App.setDef('vacPct',this.value/100)`, 'number', 'step="0.5"'))}
+      ${fld('Assurance PNO', inp((state.def&&state.def.pno)||200, `App.setDef('pno',this.value)`, 'number', 'step="10"'))}
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Espace gérant</h2>
+    ${gerant ? `
+      <p style="font-size:.86rem;color:var(--muted);margin-bottom:12px">
+        Tu es en <b>mode gérant</b> sur cet appareil : tu peux tout modifier.
+        Verrouille avant de laisser l'application à quelqu'un d'autre.
+      </p>
+      <button class="btn" onclick="App.verrouiller()">🔒 Verrouiller l'application</button>
+    ` : `
+      <p style="font-size:.86rem;color:var(--muted);margin-bottom:12px">
+        L'application est <b>en consultation</b> : tout est lisible, rien n'est modifiable.
+        Entre le mot de passe gérant pour reprendre la main. Le déverrouillage
+        est mémorisé sur cet appareil.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;max-width:420px">
+        <input type="password" id="mdpGerant" placeholder="Mot de passe gérant"
+               autocomplete="current-password"
+               style="flex:1;min-width:170px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit"
+               onkeydown="if(event.key==='Enter')App.deverrouiller()">
+        <button class="btn primary" onclick="App.deverrouiller()">🔓 Déverrouiller</button>
+      </div>
+    `}
+  </div>
+
+  <div class="panel">
+    <h2>À propos</h2>
+    <p style="font-size:.88rem;line-height:1.7;color:#374151">
+      <b>La rampe de lancement</b> — outil d'analyse de biens locatifs.<br>
+      Conçu et développé par <b>Mathis Cossu</b>.<br>
+      <span style="color:var(--muted)">Les calculs, les critères de décision et la structure des
+      scénarios reflètent sa méthode d'investissement.</span>
+    </p>
+  </div>
+
+  <div class="panel">
+    <h2>Comment lire les indicateurs</h2>
+    <ul style="font-size:.86rem;line-height:1.75;padding-left:18px;color:#374151">
+      <li><b>Rentabilité</b> = loyer annuel ÷ prix total payé pour avoir le bien (prix + honoraires d'agence + frais de notaire + travaux).</li>
+      <li><b>Cashflow</b> = loyer mensuel − mensualité de crédit − charges ÷ 12. C'est là que le financement entre en jeu.</li>
+      <li>Le prêt couvre toujours la totalité du coût d'acquisition, travaux compris, moins l'apport.</li>
+      <li>Seul le <b>prix du bien</b> se négocie ; les honoraires d'agence et les frais de notaire suivent mécaniquement puisqu'ils sont des pourcentages de ce prix.</li>
+      <li>Le <b>verdict</b> de chaque scénario répond à ta règle : combien faut-il négocier pour atteindre ton objectif de cashflow ? Vert = déjà atteint au prix affiché. Orange = atteignable dans ta limite de négociation. Rouge = il faudrait négocier plus que tu ne l'acceptes.</li>
+      <li>Le tableau <b>Négociation</b> détaille le prix maximal pour plusieurs niveaux de cashflow ; la ligne 🎯 est ton objectif.</li>
+      <li>Le <b>nombre de logements</b> d'un scénario multiplie l'objectif : une coloc de 4 chambres reste 1 logement, une division en 2 lots vise le double.</li>
+    </ul>
+  </div>`;
+}
+
+/* ============================================================
+   11. ACTIONS
+   ============================================================ */
+const App = {
+  getState: () => state,
+  qui: () => who,
+  setState: s => { state = s; },
+  persistLocal, render: () => render(), toast,
+
+  go(v){ view = v; render(); },
+  retour(){ oublierSnaps(); view = 'liste'; currentId = null; render(); },
+  ouvrir(id){ oublierSnaps(); currentId = id; view = 'detail'; render(); window.scrollTo(0,0); },
+  triCmp(k){ cmpSort = {k, dir: cmpSort.k === k ? -cmpSort.dir : (['nom','ville','strategie','statut'].includes(k) ? 1 : -1)}; renderCompare(); },
+  setWho(w){ who = w; lsSet(LS_KEY+':who', w); render(); },
+
+  bien(id){ return state.biens.find(b => b.id === id); },
+
+  setB(id, k, v){
+    if(lectureSeule) return;
+    const b = this.bien(id); if(!b) return;
+    noterBien(b);
+    b[k] = ['prix','surface','apport','duree','notePerso','taxe','copro','pno'].includes(k) ? n(v) : v;
+    if(['honoPct','notairePct','taux'].includes(k)) b[k] = n(v);
+    touch(b); state.updatedAt = now(); state.lastEditBy = who;
+    persistLocal(); if(window.pushState) window.pushState();
+    this.softRefresh();
+  },
+  setS(bid, sid, k, v){
+    if(lectureSeule) return;
+    const b = this.bien(bid); if(!b) return;
+    const s = (b.scenarios||[]).find(x => x.id === sid); if(!s) return;
+    noterScenario(b, s);
+    s[k] = ['nom','strategie','notes','dpeApres'].includes(k) ? v : n(v);
+    touch(b); state.updatedAt = now(); state.lastEditBy = who;
+    persistLocal(); if(window.pushState) window.pushState();
+    this.softRefresh();
+  },
+  setLoyer(bid, sid, i, v){
+    if(lectureSeule) return;
+    const b = this.bien(bid); const s = b && (b.scenarios||[]).find(x=>x.id===sid); if(!s) return;
+    noterScenario(b, s);
+    if(!s.loyers) s.loyers = [];
+    s.loyers[i] = n(v);
+    touch(b); state.updatedAt = now(); state.lastEditBy = who;
+    persistLocal(); if(window.pushState) window.pushState();
+    this.softRefresh();
+  },
+  addLoyer(bid, sid){
+    const b = this.bien(bid); const s = b && (b.scenarios||[]).find(x=>x.id===sid); if(!s) return;
+    noterScenario(b, s);
+    s.loyers = (s.loyers||[]).concat(0); touch(b); commit();
+  },
+  delLoyer(bid, sid){
+    const b = this.bien(bid); const s = b && (b.scenarios||[]).find(x=>x.id===sid); if(!s) return;
+    noterScenario(b, s);
+    s.loyers = (s.loyers||[]).slice(0,-1); touch(b); commit();
+  },
+
+  /* --- confirmer / annuler --- */
+  confirmerBien(id){ delete snaps.biens[id]; render(); toast('Modifications confirmées'); },
+  annulerBien(id){
+    const b = this.bien(id), snap = snaps.biens[id];
+    if(!b || !snap) return;
+    CHAMPS_BIEN.forEach(k => b[k] = snap[k]);
+    delete snaps.biens[id];
+    touch(b); commit(); toast('Fiche revenue à son état précédent');
+  },
+  confirmerScenario(sid){ delete snaps.scenarios[sid]; render(); toast('Scénario confirmé'); },
+  annulerScenario(bid, sid){
+    const b = this.bien(bid), snap = snaps.scenarios[sid];
+    if(!b || !snap) return;
+    const i = (b.scenarios||[]).findIndex(x => x.id === sid);
+    if(i < 0){ delete snaps.scenarios[sid]; return; }
+    b.scenarios[i] = JSON.parse(JSON.stringify(snap));
+    delete snaps.scenarios[sid];
+    touch(b); commit(); toast('Scénario revenu à son état précédent');
+  },
+
+  addScenario(bid){
+    const b = this.bien(bid); if(!b) return;
+    const base = b.scenarios && b.scenarios.length ? b.scenarios[0] : null;
+    const s = nouveauScenario(base ? {
+      vacPct: base.vacPct, energie: base.energie, gestionPct: base.gestionPct,
+      loyers: (base.loyers||[0]).slice(), strategie: base.strategie, nbLogements: base.nbLogements||1
+    } : null);
+    s.nom = 'Scénario ' + ((b.scenarios||[]).length + 1);
+    s.travaux = 0; s.notes = '';
+    b.scenarios = (b.scenarios||[]).concat(s);
+    touch(b); commit(); toast('Scénario ajouté');
+  },
+  dupScenario(bid, sid){
+    const b = this.bien(bid); const s = b && (b.scenarios||[]).find(x=>x.id===sid); if(!s) return;
+    const c = JSON.parse(JSON.stringify(s)); c.id = uid(); c.nom = s.nom + ' — variante';
+    b.scenarios.splice(b.scenarios.indexOf(s)+1, 0, c);
+    touch(b); commit();
+  },
+  async delScenario(bid, sid){
+    if(lectureSeule) return;
+    const b = this.bien(bid); if(!b) return;
+    const s = (b.scenarios||[]).find(x => x.id === sid); if(!s) return;
+    const vide = !n(s.travaux) && !(s.notes||'').trim();
+    if(!vide && !await demander('Supprimer le scénario « ' + s.nom + ' » ?')) return;
+    b.scenarios = b.scenarios.filter(x => x.id !== sid);
+    if(b.retenuId === sid) b.retenuId = null;
+    touch(b); commit(); toast('Scénario supprimé');
+  },
+  retenir(bid, sid){
+    const b = this.bien(bid); if(!b) return;
+    b.retenuId = b.retenuId === sid ? null : sid;
+    touch(b); commit();
+  },
+
+  nouveauBien(){
+    if(lectureSeule) return;
+    const b = nouveauBienObj();
+    const d = state.def || {};
+    ['notairePct','taux','duree'].forEach(k => { if(d[k] != null) b[k] = d[k]; });
+    if(d.vacPct != null) b.scenarios[0].vacPct = d.vacPct;
+    if(d.pno != null) b.pno = d.pno;
+    state.biens.push(b);
+    currentId = b.id; view = 'detail';
+    commit(); window.scrollTo(0,0);
+  },
+  dupliquerBien(id){
+    const b = this.bien(id); if(!b) return;
+    const c = JSON.parse(JSON.stringify(b));
+    c.id = uid(); c.updatedAt = now();
+    c.titre = titre(b) + ' (copie)';
+    (c.scenarios||[]).forEach(s => s.id = uid());
+    c.retenuId = null;
+    state.biens.push(c); currentId = c.id; commit(); window.scrollTo(0,0);
+  },
+  async supprimerBien(id){
+    if(lectureSeule) return;
+    const b = this.bien(id); if(!b) return;
+    if(!await demander('Supprimer définitivement « ' + titre(b) + ' » et ses ' +
+        (b.scenarios||[]).length + ' scénario(s) ? C\'est irréversible.')) return;
+    state.biens = state.biens.filter(x => x.id !== id);
+    state.deletedIds = (state.deletedIds||[]).concat(id);
+    view = 'liste'; currentId = null; commit(); toast('Bien supprimé');
+  },
+
+  async toggleStrategie(bid, st, coche){
+    if(lectureSeule) return;
+    const b = this.bien(bid); if(!b) return;
+    b.scenarios = b.scenarios || [];
+    if(coche){
+      const base = b.scenarios[0];
+      const s = nouveauScenario(base ? {
+        vacPct: base.vacPct, energie: base.energie, gestionPct: base.gestionPct,
+        loyers: (base.loyers||[0]).slice()
+      } : null);
+      s.strategie = st;
+      s.nom = st;
+      s.nbLogements = st === 'Division' ? 2 : 1;
+      s.travaux = 0;
+      b.scenarios.push(s);
+      touch(b); commit(); toast('Scénario « ' + st + ' » ajouté');
+    } else {
+      const vises = b.scenarios.filter(x => x.strategie === st);
+      // les loyers sont recopiés à la création : seuls les travaux et les notes
+      // témoignent d'une vraie saisie
+      const remplis = vises.filter(x => n(x.travaux) > 0 || (x.notes||'').trim());
+      if(remplis.length && !await demander('Supprimer ' + vises.length + ' scénario(s) « ' + st +
+          ' » ? Des travaux ou des notes y sont saisis.')){
+        render(); return;
+      }
+      b.scenarios = b.scenarios.filter(x => x.strategie !== st);
+      if(vises.some(x => x.id === b.retenuId)) b.retenuId = null;
+      touch(b); commit();
+    }
+  },
+  setDef(k, v){ state.def = state.def || {}; state.def[k] = n(v); commit(); },
+  async deverrouiller(){
+    const champ = document.getElementById('mdpGerant');
+    const saisi = champ ? champ.value : '';
+    const echec = msg => { toast(msg); if(champ){ champ.value = ''; champ.focus(); } };
+    const localOK = empreinte(saisi) === CODE_GERANT;
+
+    if(!localOK) return echec('❌ Mot de passe incorrect');
+
+    /* Le mot de passe local ouvre l'interface ; la connexion Firebase, elle,
+       autorise l'écriture dans la base. Si le compte n'existe pas encore ou si
+       le réseau est coupé, on ouvre quand même — la base refusera simplement
+       les enregistrements, et l'app le dit. Aucun risque de rester enfermé. */
+    let messageFin = '🔓 Espace gérant ouvert';
+    if(window.__fbConnexion){
+      try{
+        await window.__fbConnexion(saisi);
+      }catch(e){
+        const code = String((e && e.code) || '');
+        messageFin = code.indexOf('network') !== -1
+          ? '🔓 Ouvert hors ligne — la synchro reprendra au retour du réseau'
+          : '⚠️ Ouvert, mais le compte gérant n\'a pas été reconnu : tes modifications ne seront pas enregistrées en ligne';
+      }
+    }
+
+    gerant = true; lectureSeule = false;
+    lsSet(LS_KEY + ':gerant', CODE_GERANT);
+    render(); toast(messageFin);
+  },
+  verrouiller(){
+    gerant = false; lectureSeule = true;
+    lsSet(LS_KEY + ':gerant', '');
+    if(window.__fbDeconnexion) window.__fbDeconnexion();
+    oublierSnaps();
+    view = 'liste'; currentId = null;
+    render(); toast('🔒 Application verrouillée');
+  },
+
+  setCrit(k, v){ state.def = state.def || {}; state.def.crit = Object.assign({}, DEF_CRIT, state.def.crit, {[k]: n(v)}); commit(); },
+
+  exportJSON(){
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'rampe-de-lancement-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click(); URL.revokeObjectURL(a.href);
+  },
+  importJSON(input){
+    const f = input.files && input.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = async () => {
+      try{
+        const data = JSON.parse(rd.result);
+        if(!data.biens) throw 0;
+        if(!await demander('Fusionner ' + data.biens.length + ' bien(s) avec les données actuelles ?', 'Fusionner')) return;
+        const map = new Map(state.biens.map(b => [b.id, b]));
+        for(const b of data.biens){
+          const ex = map.get(b.id);
+          if(!ex || (b.updatedAt||0) >= (ex.updatedAt||0)) map.set(b.id, b);
+        }
+        state.biens = [...map.values()];
+        commit(); toast('Import terminé');
+      }catch(e){ toast('Fichier illisible'); }
+    };
+    rd.readAsText(f);
+    input.value = '';
+  },
+  /* Affiche l'intégralité des données en texte, sélectionnées, prêtes à copier.
+     Fonctionne même verrouillé et même là où le téléchargement est bloqué. */
+  afficherDonnees(){
+    const txt = JSON.stringify(state);
+    document.getElementById('zoneTransfert').innerHTML = `
+      <p style="font-size:.86rem;margin-bottom:8px">
+        <b>${state.biens.length} bien(s)</b> · ${(txt.length/1024).toFixed(1)} Ko.
+        Le texte est déjà sélectionné : fais <b>Ctrl+C</b>, ou utilise le bouton.
+      </p>
+      <textarea id="expTxt" readonly spellcheck="false"
+        style="width:100%;min-height:120px;font-family:ui-monospace,monospace;font-size:.72rem;
+               border:1px solid var(--line);border-radius:9px;padding:9px">${esc(txt)}</textarea>
+      <button class="btn primary" style="margin-top:8px" onclick="App.copierDonnees()">📋 Copier dans le presse-papier</button>`;
+    setTimeout(() => { const t = document.getElementById('expTxt'); if(t){ t.focus(); t.select(); } }, 60);
+  },
+  copierDonnees(){
+    const t = document.getElementById('expTxt'); if(!t) return;
+    t.focus(); t.select(); t.setSelectionRange(0, t.value.length);
+    let ok = false;
+    try{ ok = document.execCommand('copy'); }catch(e){}
+    if(ok){ toast('📋 Données copiées'); return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t.value)
+        .then(() => toast('📋 Données copiées'))
+        .catch(() => toast('Copie automatique refusée — fais Ctrl+C, le texte est sélectionné'));
+    } else toast('Copie automatique refusée — fais Ctrl+C, le texte est sélectionné');
+  },
+  zoneCollage(){
+    document.getElementById('zoneTransfert').innerHTML = `
+      <p style="font-size:.86rem;margin-bottom:8px">
+        Colle ici les données copiées depuis l'autre écran (<b>Ctrl+V</b>), puis fusionne.
+        Rien n'est écrasé : pour chaque bien, la version la plus récente est gardée.
+      </p>
+      <textarea id="impTxt" spellcheck="false" placeholder="Colle ici…"
+        style="width:100%;min-height:120px;font-family:ui-monospace,monospace;font-size:.72rem;
+               border:1px solid var(--line);border-radius:9px;padding:9px"></textarea>
+      <button class="btn primary" style="margin-top:8px" onclick="App.importerCollage()">🔀 Fusionner ces données</button>`;
+    setTimeout(() => { const t = document.getElementById('impTxt'); if(t) t.focus(); }, 60);
+  },
+  async importerCollage(){
+    const t = document.getElementById('impTxt');
+    let data = null;
+    try{ data = JSON.parse((t.value||'').trim()); }catch(e){}
+    if(!data || !Array.isArray(data.biens)){ toast('❌ Texte illisible — recopie tout, du { au }'); return; }
+    if(lectureSeule){ toast('🔒 Déverrouille d\'abord dans Espace gérant'); return; }
+    if(!await demander('Fusionner ' + data.biens.length + ' bien(s) avec les données actuelles ?', 'Fusionner')) return;
+    const map = new Map(state.biens.map(b => [b.id, b]));
+    let ajoutes = 0, remplaces = 0;
+    for(const b of data.biens){
+      const ex = map.get(b.id);
+      if(!ex){ map.set(b.id, b); ajoutes++; }
+      else if((b.updatedAt||0) >= (ex.updatedAt||0)){ map.set(b.id, b); remplaces++; }
+    }
+    state.biens = [...map.values()];
+    if(data.def) state.def = Object.assign({}, data.def, state.def);
+    migrer(state);
+    view = 'liste'; currentId = null;
+    commit();
+    toast('✅ ' + ajoutes + ' bien(s) ajouté(s), ' + remplaces + ' mis à jour');
+  },
+
+  exportCSV(){
+    const rows = lignesCompare();
+    const head = CMP_COLS.map(c => c.t);
+    const body = rows.map(r => CMP_COLS.map(c => {
+      const v = r[c.k];
+      return typeof v === 'number' ? String(Math.round(v*10000)/10000).replace('.', ',') : String(v||'');
+    }));
+    const csv = [head, ...body].map(l => l.map(x => '"' + String(x).replace(/"/g,'""') + '"').join(';')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'comparateur-scenarios.csv';
+    a.click(); URL.revokeObjectURL(a.href);
+  },
+
+  /* redessine sans casser le focus du champ en cours de saisie */
+  softRefresh(){
+    clearTimeout(this._sr);
+    this._sr = setTimeout(() => {
+      const el = document.activeElement;
+      const path = el && el.tagName === 'INPUT' || el && el.tagName === 'TEXTAREA' || el && el.tagName === 'SELECT';
+      if(!path){ render(); return; }
+      // mise à jour ciblée : uniquement les valeurs calculées visibles
+      if(view === 'detail'){
+        const b = state.biens.find(x => x.id === currentId);
+        if(b){ majCalculs(b); majNego(b); }
+      }
+    }, 120);
+  }
+};
+window.App = App;
+window.__app = App;
+
+/** Recalcule et réécrit les valeurs affichées sans reconstruire le DOM
+ *  (sinon le champ en cours de saisie perdrait le focus). */
+function majCalculs(b){
+  const scenarios = b.scenarios || [];
+  const cards = document.querySelectorAll('#v-detail .sc');
+  const resultats = scenarios.map(s => calc(b, s));
+  const meilleurCF = scenarios.length > 1 ? Math.max(...resultats.map(r => r.cashflow)) : null;
+
+  scenarios.forEach((s, i) => {
+    const card = cards[i]; if(!card) return;
+    const r = resultats[i];
+
+    const vals = [
+      [eurS(r.cashflow), cls(r.cashflow)], [pct(r.renta), ''], [eur(r.mens), ''],
+      [eur(r.loyerMois), ''], [eur(r.coutTotal), ''], [eur(r.charges), '']
+    ];
+    card.querySelectorAll('.sc-res b').forEach((el, j) => {
+      if(!vals[j]) return;
+      el.textContent = vals[j][0];
+      el.className = vals[j][1];
+    });
+
+    const ht = card.querySelector('.h-trav');
+    if(ht) ht.textContent = r.coutTotal ? (r.rendtTrav*100).toFixed(0) + ' % du coût total' : '';
+    const ho = card.querySelector('.h-obj');
+    if(ho) ho.textContent = 'Une coloc de 4 chambres = 1 logement. Objectif de ce scénario : ' + eur(r.cibleCF) + '/mois';
+    const hl = card.querySelector('.h-loyers');
+    if(hl) hl.textContent = 'Total ' + eur(r.loyerMois) + '/mois';
+
+    const v = card.querySelector('.verdict');
+    if(v){ v.className = 'verdict ' + r.verdict.c; v.innerHTML = verdictHTML(b, r); }
+
+    // pastille « meilleur cashflow » / écart avec le meilleur
+    const badge = card.querySelector('.sc-head + .pill');
+    if(badge && meilleurCF != null){
+      const est = Math.abs(r.cashflow - meilleurCF) < 0.5;
+      badge.className = 'pill ' + (est ? 'gold' : 'gray');
+      badge.style.alignSelf = 'flex-start';
+      badge.textContent = est ? '🏆 Meilleur cashflow'
+                              : eurS(r.cashflow - meilleurCF) + ' /mois vs le meilleur';
+    }
+  });
+}
+
+/* ============================================================
+   12. RENDU GLOBAL
+   ============================================================ */
+function render(){
+  const al = document.getElementById('alerte');
+  al.hidden = stockageOK && !dansCadre;
+  if(!al.hidden) al.innerHTML =
+    '<span class="t">⚠️ Tu n\'es pas dans la vraie application</span>' +
+    'Cette page est affichée dans un aperçu, qui bloque la synchronisation' +
+    (stockageOK ? '' : ' et l\'enregistrement de tes modifications') +
+    '. Ouvre le fichier <b>index.html</b> depuis ton dossier <b>app</b> ' +
+    '(double-clic) pour utiliser l\'application pour de bon.';
+
+  document.getElementById('whoSeg').innerHTML = USERS.map(u =>
+    `<button class="${u===who?'on':''}" onclick="App.setWho('${u}')">${u}</button>`).join('');
+
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('on', t.dataset.v === (view === 'detail' ? 'liste' : view)));
+
+  const show = id => document.getElementById(id).style.display = '';
+  const hide = id => document.getElementById(id).style.display = 'none';
+  ['v-liste','v-detail','v-compare','v-reglages'].forEach(hide);
+
+  const bandeau = document.getElementById('bandeauLecture');
+  if(bandeau) bandeau.hidden = !lectureSeule;
+  const cad = document.getElementById('cadenas');
+  if(cad){
+    cad.textContent = gerant ? '🔓' : '🔒';
+    cad.title = gerant ? 'Mode gérant — modification possible' : 'Consultation — lecture seule';
+  }
+
+  if(view === 'liste'){ show('v-liste'); renderListe(); }
+  else if(view === 'detail'){ show('v-detail'); renderDetail(); }
+  else if(view === 'compare'){ show('v-compare'); renderCompare(); }
+  else if(view === 'reglages'){ show('v-reglages'); renderReglages(); }
+
+  appliquerLectureSeule();
+}
+
+/* ============================================================
+   13. INITIALISATION
+   ============================================================ */
+function migrer(st){
+  st.biens = st.biens || [];
+  st.deletedIds = st.deletedIds || [];
+  st.migrations = st.migrations || [];
+  for(const b of st.biens){
+    if(!b.id) b.id = uid();
+    if(!b.updatedAt) b.updatedAt = 1;
+    if(!b.scenarios || !b.scenarios.length)
+      b.scenarios = [Object.assign(nouveauScenario(), {nom:'Scénario de base'})];
+    // v1 → v2 : taxe, copro et PNO remontent du scénario vers le bien
+    const s0 = b.scenarios[0] || {};
+    if(b.taxe == null && s0.taxe != null) b.taxe = s0.taxe;
+    if(b.copro == null && s0.copro != null) b.copro = s0.copro;
+    if(b.pno == null) b.pno = s0.pno != null ? s0.pno : 200;
+    if(!b.fiabTaxe)  b.fiabTaxe  = s0.fiabTaxe  || 'Estimée';
+    if(!b.fiabCopro) b.fiabCopro = s0.fiabCopro || 'Estimée';
+    ['taxe','copro','pno','fiabTaxe','fiabCopro'].forEach(k => { b[k] = b[k] == null ? (k.startsWith('fiab') ? 'Estimée' : 0) : b[k]; });
+    delete b.travauxFinances; delete b.apport;
+    if(b.aDemander == null) b.aDemander = '';
+    if(b.type === 'T5+') b.type = 'T6';   // doublon avec T6, supprimé de la liste
+    for(const s of b.scenarios){
+      if(!s.id) s.id = uid();
+      if(!Array.isArray(s.loyers)) s.loyers = [0];
+      if(!s.strategie) s.strategie = 'À définir';
+      if(!s.dpeApres) s.dpeApres = 'Inchangé';
+      if(!s.nbLogements) s.nbLogements = s.strategie === 'Division' ? 2 : 1;
+      ['taxe','copro','pno','fiabTaxe','fiabCopro'].forEach(k => delete s[k]);
+    }
+  }
+  return st;
+}
+
+(function init(){
+  let local = null;
+  try{ local = JSON.parse(lsGet(LS_KEY)); }catch(e){}
+  if(local && local.biens) state = migrer(local);
+
+  // amorçage : les biens repris du tableur, une seule fois
+  if(!(state.migrations||[]).includes('seed-sheet-2026-08')){
+    const seed = window.__SEED__ || [];
+    const ids = new Set(state.biens.map(b => b.id));
+    for(const b of seed) if(!ids.has(b.id) && !(state.deletedIds||[]).includes(b.id)) state.biens.push(b);
+    state.migrations = (state.migrations||[]).concat('seed-sheet-2026-08');
+    state.updatedAt = state.updatedAt || now();
+    persistLocal();
+  }
+  migrer(state);
+  persistLocal();   // fige les corrections de migration (ex. T5+ → T6)
+
+  document.querySelectorAll('.tab').forEach(t =>
+    t.addEventListener('click', () => App.go(t.dataset.v)));
+  document.getElementById('fStatut').innerHTML =
+    '<option value="">Tous les statuts</option>' + STATUTS.map(s=>`<option>${s}</option>`).join('');
+  ['q','fStatut','tri','grp','fQuestions'].forEach(id =>
+    document.getElementById(id).addEventListener('input', renderListe));
+
+  render();
+})();
+
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+
+<!-- ============================================================
+     CONFIG FIREBASE — colle ici la config de ton projet.
+     Tant que c'est {} l'app marche en local (données sur cet appareil).
+     ============================================================ -->
+<script type="application/json" id="fb-config">{"apiKey": "AIzaSyDI_O3wZ8zSVGfTucAPa9wrBErtvjPEs94", "authDomain": "appli-recherche-immo.firebaseapp.com", "databaseURL": "https://appli-recherche-immo-default-rtdb.europe-west1.firebasedatabase.app", "projectId": "appli-recherche-immo", "storageBucket": "appli-recherche-immo.firebasestorage.app", "messagingSenderId": "77286174329", "appId": "1:77286174329:web:bb2da434aa7fe3c04aeea8"}</script>
+
+<!-- SDK Firebase en scripts classiques (et non en modules) : un module externe
+     ne peut pas être chargé quand la page est ouverte depuis un fichier local. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+/* ---------- synchro temps réel (Firebase Realtime Database) ---------- */
+(function(){
+  const DB_PATH = 'rampe/biens-v1';
+  const dot = document.getElementById('syncDot');
+  const etat = (txt, info) => { dot.textContent = txt; dot.title = info; };
+
+  let cfg = null;
+  try{ cfg = JSON.parse(document.getElementById('fb-config').textContent); }catch(e){}
+
+  if(!cfg || !cfg.databaseURL){
+    etat('⚪', 'Mode local — synchro non configurée (voir Réglages)');
+    return;
+  }
+  if(typeof firebase === 'undefined' || !firebase.database){
+    const cadre = (() => { try{ return window.top !== window.self; }catch(e){ return true; } })();
+    etat('🔴', cadre
+      ? "Cette page est affichée dans un aperçu, qui bloque les scripts externes. "
+        + "Ouvre index.html depuis ton dossier app (double-clic) : la synchro fonctionnera."
+      : "Firebase n'a pas pu être chargé. Vérifie ta connexion internet, "
+        + "ou l'absence d'un bloqueur de publicité sur cette page.");
+    return;
+  }
+
+  let db;
+  try{
+    db = firebase.initializeApp(cfg).database();
+  }catch(e){
+    etat('🔴', 'Configuration Firebase invalide : ' + e);
+    return;
+  }
+
+  /* Le mot de passe gérant est aussi celui d'un compte Firebase : la base
+     elle-même refuse alors l'écriture à qui n'est pas connecté. La session
+     est conservée par Firebase d'un lancement à l'autre. */
+  const EMAIL_GERANT = 'gerant@rampe-de-lancement.fr';
+  if(firebase.auth){
+    const auth = firebase.auth();
+    window.__fbConnexion = mdp => auth.signInWithEmailAndPassword(EMAIL_GERANT, mdp);
+    window.__fbDeconnexion = () => auth.signOut().catch(() => {});
+    window.__fbConnecte = () => !!auth.currentUser;
+  }
+
+  const node = db.ref(DB_PATH);
+  const A = window.__app;
+  let applying = false, pushTimer = null;
+
+  // l'état de la connexion elle-même, pour distinguer « hors ligne » de « en panne »
+  db.ref('.info/connected').on('value', snap => {
+    if(snap.val()) etat('🟢', 'Synchronisé');
+    else etat('🟠', 'Hors ligne — les modifications repartiront à la reconnexion');
+  });
+
+  window.pushState = () => {
+    if(applying) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => {
+      etat('🔄', 'Envoi en cours…');
+      node.set(JSON.parse(JSON.stringify(A.getState())))
+        .then(() => etat('🟢', 'Synchronisé'))
+        .catch(e => etat('🔴', 'Écriture refusée — reconnecte-toi dans '
+                              + 'Réglages → Espace gérant. (' + e + ')'));
+    }, 600);
+  };
+
+  /* Fusion bien par bien : pour chaque bien, la version modifiée le plus
+     récemment gagne. Un appareil en retard ne peut pas écraser le travail
+     de l'autre, et un bien ajouté ailleurs n'est jamais perdu. */
+  function mergeStates(loc, rem){
+    const del = [...new Set([...(loc.deletedIds||[]), ...(rem.deletedIds||[])])];
+    const map = new Map();
+    let localWins = false;
+    for(const b of (loc.biens||[])) map.set(b.id, b);
+    for(const b of (rem.biens||[])){
+      const ex = map.get(b.id);
+      if(!ex || (b.updatedAt||0) >= (ex.updatedAt||0)) map.set(b.id, b);
+      else localWins = true;
+    }
+    for(const b of (loc.biens||[]))
+      if(!(rem.biens||[]).some(r => r.id === b.id) && !del.includes(b.id)) localWins = true;
+    if((loc.deletedIds||[]).some(id => !(rem.deletedIds||[]).includes(id))) localWins = true;
+    if((loc.migrations||[]).some(m => !(rem.migrations||[]).includes(m))) localWins = true;
+    if((loc.updatedAt||0) > (rem.updatedAt||0)) localWins = true;
+
+    const newerGlobal = (rem.updatedAt||0) >= (loc.updatedAt||0) ? rem : loc;
+    return {
+      merged: {
+        biens: [...map.values()].filter(b => !del.includes(b.id)),
+        def: newerGlobal.def || loc.def || rem.def || {},
+        deletedIds: del,
+        migrations: [...new Set([...(loc.migrations||[]), ...(rem.migrations||[])])],
+        updatedAt: Math.max(loc.updatedAt||0, rem.updatedAt||0),
+        lastEditBy: newerGlobal.lastEditBy || ''
+      },
+      localWins
+    };
+  }
+
+  node.on('value', snap => {
+    const remote = snap.val();
+    const local = A.getState();
+    if(!remote){
+      if(local.updatedAt) window.pushState();
+      etat('🟢', 'Synchronisé');
+      return;
+    }
+    const {merged, localWins} = mergeStates(local, remote);
+    const remoteBrought = (remote.updatedAt||0) > (local.updatedAt||0);
+    applying = true;
+    A.setState(merged); A.persistLocal(); A.render();
+    applying = false;
+    etat('🟢', 'Synchronisé');
+    if(localWins) window.pushState();
+    if(remoteBrought && remote.lastEditBy && remote.lastEditBy !== A.qui())
+      A.toast('🔄 Mise à jour reçue de ' + remote.lastEditBy);
+  }, e => etat('🔴', 'Lecture refusée : ' + e));
+})();
+</script>
+</body>
+</html>
