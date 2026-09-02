@@ -91,6 +91,10 @@ header h1 small{display:block;font-size:.72rem;color:var(--muted);font-weight:50
 .alerte{background:var(--amber-soft);color:#7c3d00;border:1px solid #f0c98a;border-radius:12px;padding:11px 14px;margin-bottom:12px;font-size:.86rem;line-height:1.5}
 .alerte .t{display:block;font-weight:800;margin-bottom:3px}
 .alerte.lecture-b{background:var(--navy-soft);border-color:var(--line);color:var(--ink)}
+.alerte.rappel-b{background:var(--orange-soft);border-color:#f3c39c;color:#7c3d00}
+.rd{cursor:pointer;padding:5px 0;border-top:1px solid #f3c39c;margin-top:5px;line-height:1.45}
+.rd:hover{text-decoration:underline}
+.rd span{display:block;font-size:.78rem;color:var(--muted)}
 body.lecture .toolbar .btn.primary,
 body.lecture .strats,
 body.lecture .editbar,
@@ -108,6 +112,23 @@ body.lecture input:disabled,body.lecture select:disabled,body.lecture textarea:d
 
 .panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
 .panel>h2{font-size:.82rem;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--navy2);font-weight:800}
+details.bloc{padding:0}
+details.bloc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 16px;user-select:none;border-radius:var(--radius)}
+details.bloc>summary::-webkit-details-marker{display:none}
+details.bloc>summary:hover{background:#fafafa}
+details.bloc .fleche{color:var(--orange);font-size:.9rem;transition:transform .15s;flex:0 0 auto}
+details.bloc[open] .fleche{transform:rotate(180deg)}
+details.bloc .bl-t{flex:1 1 0;min-width:0;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;color:var(--navy2);font-weight:800}
+details.bloc .bl-t em{font-style:normal;margin-left:6px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)}
+details.bloc .bl-r{margin-left:auto;font-size:.8rem;color:var(--muted);font-weight:600;text-align:right}
+details.bloc[open] .bl-r{display:none}
+details.bloc .bloc-in{padding:0 16px 16px}
+.deplier{display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px}
+@media(max-width:760px){
+  details.bloc>summary{padding:12px 13px;flex-wrap:wrap}
+  details.bloc .bl-r{width:100%;margin-left:26px;text-align:left}
+  details.bloc .bloc-in{padding:0 13px 13px}
+}
 .back{border:0;background:transparent;font-size:.95rem;font-weight:800;color:var(--navy2);cursor:pointer;padding:8px 0;margin-bottom:4px}
 .det-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px}
 .det-head h2{font-size:1.2rem;margin:0;flex:1;min-width:220px;line-height:1.3}
@@ -140,6 +161,14 @@ body.lecture input:disabled,body.lecture select:disabled,body.lecture textarea:d
 .sc-res span{font-size:.67rem;color:var(--muted);font-weight:700;text-transform:uppercase}
 .sc-res b{font-size:1.02rem}
 .sc-res .wide{grid-column:1/-1}
+.rappels{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.rappel{display:flex;gap:7px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
+.rappel.echu{border-color:#f0c98a;background:var(--amber-soft)}
+.rappel.fait{opacity:.5}
+.rappel.fait .rp-txt{text-decoration:line-through}
+.rappel input[type=checkbox]{width:17px;height:17px;accent-color:var(--orange);cursor:pointer}
+.rp-quand{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:.83rem}
+.rp-txt{flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font:inherit;font-size:.86rem}
 .editbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--gold-soft);border:1px solid #e6cf85;border-radius:10px;padding:8px 10px}
 .editbar[hidden]{display:none}
 .editbar span{flex:1;min-width:110px;font-size:.76rem;font-weight:700;color:#6b5200}
@@ -204,7 +233,9 @@ table.t td.name{font-weight:700;cursor:pointer;color:var(--navy2);white-space:no
   .panel{padding:13px}
   .fgrid{grid-template-columns:1fr 1fr;gap:8px}
   .fgrid .field:has(textarea){grid-column:1/-1}
-  .det-head h2{font-size:1.05rem;min-width:0}
+  .det-head{flex-direction:column;align-items:flex-start;gap:6px}
+  .det-head h2{font-size:1.05rem;min-width:0;width:100%}
+  .det-head .pill{font-size:.7rem}
   .nego table{font-size:.78rem}
   .nego th,.nego td{padding:6px 4px}
   table.t{font-size:.78rem}
@@ -242,6 +273,7 @@ table.t td.name{font-weight:700;cursor:pointer;color:var(--navy2);white-space:no
 </div>
 
 <div id="v-liste">
+  <div id="rappelsDus"></div>
   <div class="kpis" id="kpis"></div>
   <div class="toolbar">
     <input type="search" id="q" placeholder="Rechercher (ville, quartier, titre…)">
@@ -249,6 +281,7 @@ table.t td.name{font-weight:700;cursor:pointer;color:var(--navy2);white-space:no
     <select id="fQuestions">
       <option value="">Tous les biens</option>
       <option value="1">Avec questions en attente</option>
+      <option value="2">Avec rappel à traiter</option>
     </select>
     <select id="grp">
       <option value="">Aucun regroupement</option>
@@ -262,6 +295,8 @@ table.t td.name{font-weight:700;cursor:pointer;color:var(--navy2);white-space:no
       <option value="cashflow">Tri : cashflow ↓</option>
       <option value="brute">Tri : rentabilité ↓</option>
       <option value="contact">Tri : contact agence</option>
+      <option value="prise">Tri : prise de contact</option>
+      <option value="statut">Tri : étape du dossier</option>
     </select>
     <button class="btn primary" onclick="App.nouveauBien()">＋ Bien</button>
   </div>
@@ -295,14 +330,15 @@ table.t td.name{font-weight:700;cursor:pointer;color:var(--navy2);white-space:no
    ============================================================ */
 const LS_KEY = 'rampeLancement:v1';
 const STRATEGIES = ['À définir','Location nue','Location meublée','Colocation','Immeuble de rapport','Division','Courte durée'];
-const STATUTS = ['À étudier','À visiter','Visité','Offre faite','Offre acceptée','Refusé','Abandonné'];
+const STATUTS = ['À étudier','À visiter','Visité','Offre faite','Offre acceptée','Sous compromis','Vendu','Refusé','Abandonné'];
 const CONTACTS = ['Non contacté','Contacté','Répondu','Sans réponse','RDV pris'];
 const TYPES = ['Studio','T1','T2','T3','T4','T5','T6','T7+','Maison','Immeuble','Local commercial'];
 const FIAB = ['Estimée','Confirmée'];
 const DPE_L = ['','A','B','C','D','E','F','G','Non communiqué','Vierge / en cours'];
 const DPE_APRES = ['Inchangé','A','B','C','D','E','F','G'];
 const DPE_COL = {A:['#2E7D32','#fff'],B:['#66BB6A','#0F2916'],C:['#C6E152','#2B3400'],D:['#FFF176','#4A3B00'],E:['#FFB74D','#4A2C00'],F:['#FF7043','#3B0F00'],G:['#C62828','#fff']};
-const STATUT_PILL = {'À étudier':'gray','À visiter':'blue','Visité':'purple','Offre faite':'amber','Offre acceptée':'green','Refusé':'gray','Abandonné':'gray'};
+const STATUT_PILL = {'À étudier':'gray','À visiter':'blue','Visité':'purple','Offre faite':'amber',
+  'Offre acceptée':'green','Sous compromis':'teal','Vendu':'red','Refusé':'gray','Abandonné':'gray'};
 const CONTACT_PILL = {'Non contacté':'gray','Contacté':'blue','Répondu':'green','Sans réponse':'amber','RDV pris':'green'};
 const STRAT_PILL = {'Location nue':'blue','Location meublée':'teal','Colocation':'purple','Immeuble de rapport':'gold','Division':'amber','Courte durée':'red','À définir':'gray'};
 const DEF_CRIT = {cibleParLogement: 200, negoMax: 0.25};
@@ -340,6 +376,41 @@ let view = 'liste', currentId = null, cmpSort = {k:'cashflow', dir:-1};
 /* Le contact agence ne s'affiche sur les cartes que quand il est pertinent :
    quand on trie par contact (le regroupement, lui, le met déjà en en-tête). */
 let afficherContact = false;
+/* Position de défilement de la liste, restituée en revenant d'une fiche. */
+let scrollListe = 0;
+
+/* Sections dépliables de la fiche. L'état est mémorisé sur l'appareil, sinon
+   tout se refermerait à chaque frappe (la fiche est reconstruite en continu). */
+const BLOCS_DEFAUT = {identite:false, acquisition:false, charges:false,
+                      scenarios:true, nego:false, rappels:false, suivi:false};
+let blocsOuverts = (() => {
+  try{ return Object.assign({}, BLOCS_DEFAUT, JSON.parse(lsGet(LS_KEY+':blocs')||'{}')); }
+  catch(e){ return Object.assign({}, BLOCS_DEFAUT); }
+})();
+
+/** Une section dépliable : titre cliquable, triangle, et un résumé visible
+ *  même repliée pour ne pas avoir à ouvrir pour savoir ce qu'il y a dedans. */
+function bloc(cle, titreTxt, sousTitre, resume, contenu, classe){
+  return `<details class="panel bloc ${classe||''}" ${blocsOuverts[cle] ? 'open' : ''}
+           ontoggle="App.setBloc('${cle}', this.open)">
+    <summary>
+      <span class="fleche">▾</span>
+      <span class="bl-t">${titreTxt}${sousTitre ? `<em>${sousTitre}</em>` : ''}</span>
+      ${resume ? `<span class="bl-r">${resume}</span>` : ''}
+    </summary>
+    <div class="bloc-in">${contenu}</div>
+  </details>`;
+}
+/* La hauteur de la page n'est pas définitive au premier rendu : on réapplique
+   la position sur quelques images pour qu'elle tienne vraiment. */
+function restaurerScroll(){
+  let n = 0;
+  const appliquer = () => {
+    window.scrollTo(0, scrollListe);
+    if(++n < 6) requestAnimationFrame(appliquer);
+  };
+  requestAnimationFrame(appliquer);
+}
 
 /* ESPACE GÉRANT
    L'application s'ouvre verrouillée : tout est lisible, rien n'est modifiable.
@@ -376,7 +447,8 @@ function appliquerLectureSeule(){
 const snaps = {biens: {}, scenarios: {}};
 const CHAMPS_BIEN = ['titre','ville','quartier','adresse','type','surface','lien','titreAnnonce',
   'prix','honoPct','notairePct','taxe','fiabTaxe','copro','fiabCopro','pno','taux','duree',
-  'dpe','ges','statut','contacte','dateVisite','notePerso','contactAgence','aDemander','commentaires'];
+  'dpe','ges','statut','contacte','dateVisite','heureVisite','notePerso','contactAgence',
+  'aDemander','commentaires','rappels'];
 
 function noterBien(b){
   if(snaps.biens[b.id]) return;
@@ -522,6 +594,32 @@ function chiffres(txt){
   return d;
 }
 
+/* ---------- rappels ---------- */
+const maintenant = () => new Date();
+/** "2026-10-15T14:00" → Date, ou null si vide/illisible. */
+function quandDate(r){
+  if(!r || !r.quand) return null;
+  const d = new Date(r.quand);
+  return isNaN(d) ? null : d;
+}
+/** Rappels non faits, du plus urgent au plus lointain. */
+function rappelsActifs(b){
+  return (b.rappels||[]).filter(r => !r.fait && quandDate(r))
+    .sort((x, y) => quandDate(x) - quandDate(y));
+}
+/** Rappel dont l'heure est passée. */
+function rappelEchu(r){ const d = quandDate(r); return d && d <= maintenant(); }
+function dateCourte(r){
+  const d = quandDate(r); if(!d) return '';
+  return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + ' ' +
+         d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+function dateLongue(r){
+  const d = quandDate(r); if(!d) return '';
+  return d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) +
+         ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
 /** Clé d'identité d'un contact agence : le numéro s'il y en a un (donc insensible
  *  au formatage), sinon le texte. Deux biens confiés au même agent tombent dans
  *  le même groupe même si le numéro n'est pas écrit pareil. */
@@ -621,7 +719,7 @@ function nouveauBienObj(){
     taux: 0.035, duree: 20,
     dpe: '', ges: '',
     statut: 'À étudier', contacte: 'Non contacté', dateVisite: '', notePerso: '',
-    contactAgence: '', aDemander: '', commentaires: '',
+    contactAgence: '', aDemander: '', commentaires: '', heureVisite: '',
     scenarios: [Object.assign(nouveauScenario(), {nom: 'Rafraîchissement', strategie: 'Colocation'})],
     retenuId: null
   };
@@ -635,7 +733,9 @@ function biensFiltres(){
   const fs = document.getElementById('fStatut').value;
   let arr = state.biens.filter(b => {
     if(fs && b.statut !== fs) return false;
-    if(document.getElementById('fQuestions').value && !(b.aDemander||'').trim()) return false;
+    const fq = document.getElementById('fQuestions').value;
+    if(fq === '1' && !(b.aDemander||'').trim()) return false;
+    if(fq === '2' && !rappelsActifs(b).some(rappelEchu)) return false;
     if(!q) return true;
     const texte = [titre(b), b.ville, b.quartier, b.adresse, b.titreAnnonce,
                    b.commentaires, b.aDemander, b.contactAgence, b.lien]
@@ -654,7 +754,13 @@ function biensFiltres(){
     const r = calc(b, s);
     return {cashflow: -r.cashflow, brute: -r.renta}[tri] ?? 0;
   };
-  if(tri === 'contact') arr.sort((a, b) => {
+  if(tri === 'prise') arr.sort((a, b) =>
+    (CONTACTS.indexOf(a.contacte) - CONTACTS.indexOf(b.contacte)) ||
+    titre(a).localeCompare(titre(b), 'fr'));
+  else if(tri === 'statut') arr.sort((a, b) =>
+    (STATUTS.indexOf(a.statut) - STATUTS.indexOf(b.statut)) ||
+    titre(a).localeCompare(titre(b), 'fr'));
+  else if(tri === 'contact') arr.sort((a, b) => {
     // les biens du même agent se retrouvent côte à côte, sans contact à la fin
     const ka = cleContact(a) || '\uffff', kb = cleContact(b) || '\uffff';
     return ka === kb ? titre(a).localeCompare(titre(b), 'fr') : ka.localeCompare(kb, 'fr');
@@ -664,6 +770,21 @@ function biensFiltres(){
 }
 
 function renderListe(){
+  // rappels arrivés à échéance, tous biens confondus
+  const dus = [];
+  for(const b of state.biens)
+    for(const rp of rappelsActifs(b))
+      if(rappelEchu(rp)) dus.push({b, rp});
+  dus.sort((x, y) => quandDate(x.rp) - quandDate(y.rp));
+  document.getElementById('rappelsDus').innerHTML = dus.length ? `
+    <div class="alerte rappel-b">
+      <span class="t">🔔 ${dus.length} rappel${dus.length>1?'s':''} à traiter</span>
+      ${dus.map(({b, rp}) => `<div class="rd" onclick="App.ouvrir('${b.id}')">
+        <b>${esc(dateCourte(rp))}</b> · ${esc(rp.texte || 'Rappel')}
+        <span>${esc(titre(b))}</span>
+      </div>`).join('')}
+    </div>` : '';
+
   // KPI
   const rs = state.biens.map(b => { const s = scenarioRetenu(b); return s ? calc(b,s) : null; }).filter(Boolean);
   const posit = rs.filter(r => r.cashflow >= 0).length;
@@ -753,7 +874,11 @@ function carteBien(b){
       <h3>${esc(titre(b))}</h3>
       <div class="prix">${n(b.prix) ? eur(b.prix) : '—'}</div>
       <div class="mc-top">
+        <span class="pill ${STATUT_PILL[b.statut]||'gray'}">${esc(b.statut)}</span>
         <span class="pill ${CONTACT_PILL[b.contacte]||'gray'}">${esc(b.contacte)}</span>
+        ${(() => { const rp = rappelsActifs(b)[0]; return rp
+            ? `<span class="pill ${rappelEchu(rp)?'amber':'gray'}" title="${esc(rp.texte||'Rappel')}">🔔 ${esc(dateCourte(rp))}</span>`
+            : ''; })()}
       </div>
       ${afficherContact ? contactLigne(b) : ''}
       ${r ? `<div class="mc-nums">
@@ -814,8 +939,14 @@ function renderDetail(){
     </div>
   </div>
 
-  <div class="panel">
-    <h2>Identité</h2>
+  <div class="deplier">
+    <button class="btn sm" onclick="App.toutDeplier(true)">▾ Tout déplier</button>
+    <button class="btn sm" onclick="App.toutDeplier(false)">▸ Tout replier</button>
+  </div>
+
+  ${bloc('identite', 'Identité', '',
+    [b.ville, b.type, n(b.surface) ? Math.round(n(b.surface))+' m²' : '', b.dpe ? 'DPE '+b.dpe : '']
+      .filter(Boolean).join(' · '), `
     <div class="fgrid">
       ${fld('Ville', inp(b.ville, S+`'ville',this.value)`))}
       ${fld('Quartier / rue', inp(b.quartier, S+`'quartier',this.value)`), 'Sert au titre de la fiche')}
@@ -825,11 +956,10 @@ function renderDetail(){
       ${fld("Titre de l'annonce", inp(b.titreAnnonce, S+`'titreAnnonce',this.value)`), 'Le titre Leboncoin, gardé pour mémoire')}
       ${fld('DPE', sel(b.dpe, DPE_L, S+`'dpe',this.value)`))}
       ${fld('GES', sel(b.ges, DPE_L, S+`'ges',this.value)`))}
-    </div>
-  </div>
+    </div>`)}
 
-  <div class="panel">
-    <h2>Acquisition &amp; financement <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">— commun à tous les scénarios</span></h2>
+  ${bloc('acquisition', 'Acquisition &amp; financement', '— commun à tous les scénarios',
+    (n(b.prix) ? eur(b.prix) + ' · FAI ' + (rr ? eur(rr.prixFAI) : '—') : 'à renseigner'), `
     <div class="fgrid">
       ${fld('Prix du bien (hors agence)', inp(b.prix, S+`'prix',this.value)`, 'number', 'step="500" min="0"'))}
       ${fld('Honoraires agence (%)', inp((n(b.honoPct)*100).toFixed(2), S+`'honoPct',this.value/100)`, 'number', 'step="0.01" min="0"'))}
@@ -839,22 +969,20 @@ function renderDetail(){
       ${fld('Apport', `<div class="readonly">${eur(apport())}</div>`, 'Identique pour tous les biens, modifiable dans Réglages')}
       ${fld('Prix FAI', `<div class="readonly">${rr ? eur(rr.prixFAI) : '—'}</div>`)}
       ${fld('Prix / m² (FAI)', `<div class="readonly">${rr && rr.prixM2 ? eur(rr.prixM2) : '—'}</div>`)}
-    </div>
-  </div>
+    </div>`)}
 
-  <div class="panel">
-    <h2>Charges fixes du bien <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">— identiques quel que soit le scénario</span></h2>
+  ${bloc('charges', 'Charges fixes du bien', '— identiques quel que soit le scénario',
+    eur(n(b.taxe) + n(b.copro) + n(b.pno)) + ' /an', `
     <div class="fgrid">
       ${fld('Taxe foncière (€/an)', inp(b.taxe, S+`'taxe',this.value)`, 'number', 'step="10" min="0"'))}
       ${fld('Fiabilité de la taxe', sel(b.fiabTaxe, FIAB, S+`'fiabTaxe',this.value)`))}
       ${fld('Charges de copropriété (€/an)', inp(b.copro, S+`'copro',this.value)`, 'number', 'step="10" min="0"'), 'Part propriétaire uniquement')}
       ${fld('Fiabilité des charges', sel(b.fiabCopro, FIAB, S+`'fiabCopro',this.value)`))}
       ${fld('Assurance PNO (€/an)', inp(b.pno, S+`'pno',this.value)`, 'number', 'step="10" min="0"'))}
-    </div>
-  </div>
+    </div>`)}
 
-  <div class="panel">
-    <h2>Scénarios <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">— ${lectureSeule ? 'les stratégies envisagées pour ce bien' : 'coche les stratégies que tu envisages pour ce bien'}</span></h2>
+  ${bloc('scenarios', 'Scénarios', '— ' + (lectureSeule ? 'les stratégies envisagées pour ce bien' : 'coche les stratégies que tu envisages pour ce bien'),
+    scenarios.length + ' scénario' + (scenarios.length > 1 ? 's' : ''), `
     <div class="strats">
       ${STRATEGIES.filter(x => x !== 'À définir').map(st => {
         const nb = scenarios.filter(x => x.strategie === st).length;
@@ -866,17 +994,30 @@ function renderDetail(){
     </div>
     ${scenarios.length ? `<div class="scgrid">
       ${scenarios.map(s => scenarioCard(b, s, meilleurCF)).join('')}
-    </div>` : `<div class="empty">Coche une ou plusieurs stratégies ci-dessus pour créer les cartes à remplir.</div>`}
-  </div>
+    </div>` : `<div class="empty">Coche une ou plusieurs stratégies ci-dessus pour créer les cartes à remplir.</div>`}`)}
 
   ${retenu ? negoPanel(b, retenu) : ''}
 
-  <div class="panel">
-    <h2>Suivi du dossier</h2>
+  ${bloc('rappels', 'Rappels', '',
+    (rappelsActifs(b).length ? rappelsActifs(b).length + ' en cours' : 'aucun'), `
+    <p style="font-size:.84rem;color:var(--muted);margin-bottom:10px">
+      Ce que tu dois refaire plus tard sur ce bien. Les rappels arrivés à échéance
+      s'affichent en haut de la liste des biens. Le bouton agenda crée un vrai
+      rendez-vous dans le calendrier de ton téléphone, avec alarme.
+    </p>
+    ${(b.rappels||[]).length ? `<div class="rappels">
+      ${b.rappels.map(rp => rappelLigne(b, rp)).join('')}
+    </div>` : '<p style="font-size:.86rem;color:var(--muted);margin-bottom:10px">Aucun rappel.</p>'}
+    <button class="btn" onclick="App.addRappel('${b.id}')">＋ Ajouter un rappel</button>`)}
+
+  ${bloc('suivi', 'Suivi du dossier', '',
+    esc(b.statut) + ' · ' + esc(b.contacte), `
     <div class="fgrid">
       ${fld('Statut', sel(b.statut, STATUTS, S+`'statut',this.value)`))}
       ${fld('Prise de contact', sel(b.contacte, CONTACTS, S+`'contacte',this.value)`))}
       ${fld('Date de visite', inp(b.dateVisite, S+`'dateVisite',this.value)`, 'date'))}
+      ${fld('Heure', inp(b.heureVisite, S+`'heureVisite',this.value)`, 'time'))}
+      ${fld('Adresse du rendez-vous', inp(b.adresse, S+`'adresse',this.value)`), 'Où tu dois te présenter')}
       ${fld('Contact agence (nom, téléphone)', inp(b.contactAgence, S+`'contactAgence',this.value)`), 'Recherchable au numéro, avec ou sans espaces')}
     </div>
     <div class="field" style="margin-top:10px">
@@ -892,12 +1033,25 @@ function renderDetail(){
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn" onclick="App.dupliquerBien('${b.id}')">⧉ Dupliquer le bien</button>
       <button class="btn danger del-bien" style="margin-left:auto" onclick="App.supprimerBien('${b.id}')">🗑 Supprimer ce bien</button>
-    </div>
-  </div>`;
+    </div>`)}`;
 }
 
 /** Contenu du bloc verdict d'un scénario — partagé entre le rendu complet
  *  et la mise à jour en cours de frappe, pour qu'ils ne divergent jamais. */
+function rappelLigne(b, rp){
+  const R = `App.setRappel('${b.id}','${rp.id}',`;
+  const echu = !rp.fait && rappelEchu(rp);
+  return `<div class="rappel ${rp.fait ? 'fait' : echu ? 'echu' : ''}">
+    <label class="rp-ok" title="${rp.fait ? 'Rappel traité' : 'Marquer comme traité'}">
+      <input type="checkbox" ${rp.fait ? 'checked' : ''} onchange="${R}'fait',this.checked)">
+    </label>
+    <input class="rp-quand" type="datetime-local" value="${esc(rp.quand||'')}" oninput="${R}'quand',this.value)">
+    <input class="rp-txt" type="text" value="${esc(rp.texte||'')}" placeholder="Ce qu'il faut faire…" oninput="${R}'texte',this.value)">
+    <button class="btn sm" title="Ajouter à mon agenda" onclick="App.agenda('${b.id}','${rp.id}')">📅</button>
+    <button class="btn sm danger" title="Supprimer" onclick="App.delRappel('${b.id}','${rp.id}')">🗑</button>
+  </div>`;
+}
+
 function verdictHTML(b, r){
   if(r.objectif.impossible)
     return `<b>${r.verdict.t}</b><span>${r.objectif.causeTravaux
@@ -995,8 +1149,10 @@ function majNego(b){
 
 function negoPanel(b, s){
   const r = calc(b, s);
-  return `<div class="panel nego">
-    <h2>Négociation — scénario « ${esc(s.nom)} »</h2>
+  const resume = r.objectif.impossible ? 'inatteignable'
+               : r.negoNeed > 0 ? 'viser ' + eur(r.objectif.prixMax)
+               : 'objectif tenu au prix affiché';
+  return bloc('nego', 'Négociation', '— scénario « ' + esc(s.nom) + ' »', resume, `
     <p style="font-size:.83rem;color:var(--muted);margin-bottom:10px">À quel prix acheter pour atteindre chaque objectif de cashflow, travaux et charges de ce scénario compris.</p>
     <div style="overflow-x:auto"><table>
       <tr><th>Cashflow visé</th><th>Mensualité max</th><th>Emprunt max</th><th>Coût total max</th><th>Prix max (hors agence)</th><th>Écart vs prix affiché</th><th>Négo</th></tr>
@@ -1010,8 +1166,7 @@ function negoPanel(b, s){
              <td class="${cls(x.ecart)}">${eurS(x.ecart)}</td>
              <td class="${cls(x.ecart)}" style="font-weight:800">${pctS(x.pct)}</td>`}
       </tr>`).join('')}
-    </table></div>
-  </div>`;
+    </table></div>`, 'nego');
 }
 
 /* ============================================================
@@ -1198,8 +1353,22 @@ const App = {
   persistLocal, render: () => render(), toast,
 
   go(v){ view = v; render(); },
-  retour(){ oublierSnaps(); view = 'liste'; currentId = null; render(); },
-  ouvrir(id){ oublierSnaps(); currentId = id; view = 'detail'; render(); window.scrollTo(0,0); },
+
+  /* Le bouton « retour » du téléphone doit fermer la fiche, pas quitter l'app.
+     Ouvrir une fiche empile une entrée d'historique ; le retour la dépile. */
+  retour(depuisHistorique){
+    oublierSnaps();
+    view = 'liste'; currentId = null;
+    render();
+    restaurerScroll();
+    if(!depuisHistorique && history.state && history.state.fiche) history.back();
+  },
+  ouvrir(id){
+    oublierSnaps();
+    scrollListe = window.scrollY || document.documentElement.scrollTop || 0;
+    currentId = id; view = 'detail'; render(); window.scrollTo(0, 0);
+    try{ history.pushState({fiche: id}, ''); }catch(e){}
+  },
   triCmp(k){ cmpSort = {k, dir: cmpSort.k === k ? -cmpSort.dir : (['nom','ville','strategie','statut'].includes(k) ? 1 : -1)}; renderCompare(); },
   setWho(w){ who = w; lsSet(LS_KEY+':who', w); render(); },
 
@@ -1360,6 +1529,74 @@ const App = {
       touch(b); commit();
     }
   },
+  /* --- rappels --- */
+  addRappel(id){
+    if(lectureSeule) return;
+    const b = this.bien(id); if(!b) return;
+    const d = new Date(Date.now() + 7*24*3600*1000);   // proposé : dans une semaine, 10 h
+    d.setHours(10, 0, 0, 0);
+    const iso = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    b.rappels = (b.rappels||[]).concat({id: uid(), quand: iso, texte: '', fait: false});
+    noterBien(b); touch(b); commit();
+  },
+  setRappel(bid, rid, k, v){
+    if(lectureSeule) return;
+    const b = this.bien(bid); if(!b) return;
+    const rp = (b.rappels||[]).find(x => x.id === rid); if(!rp) return;
+    noterBien(b);
+    rp[k] = v;
+    touch(b); state.updatedAt = now(); state.lastEditBy = who;
+    persistLocal(); if(window.pushState) window.pushState();
+    if(k === 'fait') render(); else this.softRefresh();
+  },
+  async delRappel(bid, rid){
+    if(lectureSeule) return;
+    const b = this.bien(bid); if(!b) return;
+    const rp = (b.rappels||[]).find(x => x.id === rid);
+    if(rp && (rp.texte||'').trim() && !await demander('Supprimer ce rappel ?')) return;
+    b.rappels = (b.rappels||[]).filter(x => x.id !== rid);
+    touch(b); commit();
+  },
+  /* Crée un vrai rendez-vous dans l'agenda du téléphone, avec alarme 1 h avant.
+     C'est le seul moyen fiable d'être prévenu quand l'app est fermée. */
+  agenda(bid, rid){
+    const b = this.bien(bid); if(!b) return;
+    const rp = (b.rappels||[]).find(x => x.id === rid); if(!rp) return;
+    const d = quandDate(rp);
+    if(!d){ toast('Renseigne d\'abord la date et l\'heure'); return; }
+    const fmt = x => x.getFullYear() + String(x.getMonth()+1).padStart(2,'0') + String(x.getDate()).padStart(2,'0')
+                   + 'T' + String(x.getHours()).padStart(2,'0') + String(x.getMinutes()).padStart(2,'0') + '00';
+    const ech = t => String(t||'').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+    const fin = new Date(d.getTime() + 30*60000);
+    const desc = [rp.texte, b.contactAgence, b.lien].filter(Boolean).join(' — ');
+    const ics = [
+      'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//La rampe de lancement//FR','CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT','UID:' + rp.id + '@rampe',
+      'DTSTAMP:' + fmt(new Date()), 'DTSTART:' + fmt(d), 'DTEND:' + fmt(fin),
+      'SUMMARY:' + ech((rp.texte || 'Rappel') + ' — ' + titre(b)),
+      'DESCRIPTION:' + ech(desc),
+      b.adresse ? 'LOCATION:' + ech(b.adresse) : '',
+      'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY','DESCRIPTION:' + ech(rp.texte || 'Rappel'),'END:VALARM',
+      'END:VEVENT','END:VCALENDAR'
+    ].filter(Boolean).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar'}));
+    a.download = 'rappel-' + titre(b).replace(/[^\w]+/g,'-').slice(0,40) + '.ics';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('📅 Ouvre le fichier pour l\'ajouter à ton agenda');
+  },
+
+  setBloc(cle, ouvert){
+    if(blocsOuverts[cle] === ouvert) return;
+    blocsOuverts[cle] = ouvert;
+    lsSet(LS_KEY + ':blocs', JSON.stringify(blocsOuverts));
+  },
+  toutDeplier(ouvrir){
+    Object.keys(blocsOuverts).forEach(k => blocsOuverts[k] = ouvrir);
+    lsSet(LS_KEY + ':blocs', JSON.stringify(blocsOuverts));
+    render();
+  },
+
   setDef(k, v){ state.def = state.def || {}; state.def[k] = n(v); commit(); },
   async deverrouiller(){
     const champ = document.getElementById('mdpGerant');
@@ -1635,6 +1872,8 @@ function migrer(st){
     ['taxe','copro','pno','fiabTaxe','fiabCopro'].forEach(k => { b[k] = b[k] == null ? (k.startsWith('fiab') ? 'Estimée' : 0) : b[k]; });
     delete b.travauxFinances; delete b.apport;
     if(b.aDemander == null) b.aDemander = '';
+    if(b.heureVisite == null) b.heureVisite = '';
+    if(!Array.isArray(b.rappels)) b.rappels = [];
     if(b.type === 'T5+') b.type = 'T6';   // doublon avec T6, supprimé de la liste
     for(const s of b.scenarios){
       if(!s.id) s.id = uid();
@@ -1667,6 +1906,11 @@ function migrer(st){
 
   document.querySelectorAll('.tab').forEach(t =>
     t.addEventListener('click', () => App.go(t.dataset.v)));
+
+  // bouton « retour » du navigateur ou du téléphone
+  window.addEventListener('popstate', () => {
+    if(view === 'detail') App.retour(true);
+  });
   document.getElementById('fStatut').innerHTML =
     '<option value="">Tous les statuts</option>' + STATUTS.map(s=>`<option>${s}</option>`).join('');
   ['q','fStatut','tri','grp','fQuestions'].forEach(id =>
