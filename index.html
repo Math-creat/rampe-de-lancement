@@ -451,11 +451,21 @@ function calc(b, s){
   // Négociation : prix max du bien pour atteindre chaque cashflow cible
   const prixPour = cible => {
     const mensMax    = loyerMois - charges/12 - cible;
-    const empruntMax = mensMax > 0 ? pv(mensMax, b.taux, b.duree) : 0;
+    /* Si le loyer ne couvre même pas les charges plus l'objectif, aucun prix
+       d'achat ne peut y remédier — même gratuit, le bien ne tiendrait pas.
+       On le signale au lieu d'afficher un prix cible qui n'a pas de sens. */
+    if(mensMax <= 0) return {cible, impossible: true, mensMax: 0, empruntMax: 0,
+                             coutMax: 0, prixMax: 0, ecart: -prix, pct: -1};
+    const empruntMax = pv(mensMax, b.taux, b.duree);
     const coutMax    = empruntMax + apport();
     // Seul le prix du bien se négocie ; honoraires et notaire suivent mécaniquement.
     const denom      = (1 + n(b.honoPct)) * (1 + n(b.notairePct));
-    const prixMax    = denom > 0 ? Math.max(0, (coutMax - travaux) / denom) : 0;
+    const brut       = denom > 0 ? (coutMax - travaux) / denom : -1;
+    /* Prix négatif : même en obtenant le bien gratuitement, les travaux à eux
+       seuls dépassent ce que l'objectif permet d'emprunter. */
+    if(brut <= 0) return {cible, impossible: true, causeTravaux: true, mensMax: Math.max(0, mensMax),
+                          empruntMax, coutMax, prixMax: 0, ecart: -prix, pct: -1};
+    const prixMax    = brut;
     return {cible, mensMax: Math.max(0, mensMax), empruntMax, coutMax, prixMax,
             ecart: prixMax - prix, pct: prix > 0 ? (prixMax - prix)/prix : 0};
   };
@@ -465,6 +475,9 @@ function calc(b, s){
   const negoNeed   = -objectif.pct;                       // 0,18 = il faut obtenir −18 %
   const verdict =
       coutTotal === 0        ? {t:'—', c:'gray'}
+    : objectif.impossible    ? {t: objectif.causeTravaux
+                                   ? '🔴 Inatteignable — les travaux à eux seuls dépassent le budget'
+                                   : '🔴 Inatteignable — les charges absorbent déjà le loyer', c:'red'}
     : objectif.pct >= 0      ? {t:'✅ Objectif atteint au prix affiché', c:'green'}
     : negoNeed <= C.negoMax  ? {t:'🟡 Négociable : −' + Math.round(negoNeed*100) + ' %', c:'amber'}
                              : {t:'🔴 Hors cible : −' + Math.round(negoNeed*100) + ' % nécessaires', c:'red'};
@@ -886,6 +899,12 @@ function renderDetail(){
 /** Contenu du bloc verdict d'un scénario — partagé entre le rendu complet
  *  et la mise à jour en cours de frappe, pour qu'ils ne divergent jamais. */
 function verdictHTML(b, r){
+  if(r.objectif.impossible)
+    return `<b>${r.verdict.t}</b><span>${r.objectif.causeTravaux
+      ? `Même à prix nul, ${eur(r.travaux)} de travaux ne laissent pas ${eur(r.cibleCF)}/mois. `
+        + `Il faut réduire les travaux ou monter les loyers.`
+      : `${eur(r.loyerMois)}/mois de loyer contre ${eur(r.charges/12)}/mois de charges : `
+        + `il faut augmenter les loyers ou baisser les charges.`}</span>`;
   return `<b>${r.verdict.t}</b>` + (r.negoNeed > 0
     ? `<span>Prix à obtenir pour ${eur(r.cibleCF)}/mois : <b>${eur(r.objectif.prixMax)}</b> — affiché ${eur(n(b.prix))}</span>`
     : '');
@@ -983,10 +1002,13 @@ function negoPanel(b, s){
       <tr><th>Cashflow visé</th><th>Mensualité max</th><th>Emprunt max</th><th>Coût total max</th><th>Prix max (hors agence)</th><th>Écart vs prix affiché</th><th>Négo</th></tr>
       ${r.nego.map(x => `<tr${x.estObjectif ? ' style="background:var(--gold-soft)"' : ''}>
         <td>${x.cible === 0 ? 'Équilibre (0 €)' : eur(x.cible)+' /mois'}${x.estObjectif ? ' 🎯' : ''}</td>
-        <td>${eur(x.mensMax)}</td><td>${eur(x.empruntMax)}</td><td>${eur(x.coutMax)}</td>
-        <td style="font-weight:800">${eur(x.prixMax)}</td>
-        <td class="${cls(x.ecart)}">${eurS(x.ecart)}</td>
-        <td class="${cls(x.ecart)}" style="font-weight:800">${pctS(x.pct)}</td>
+        ${x.impossible
+          ? `<td colspan="6" style="text-align:left;color:var(--red);font-weight:700">Inatteignable : ${
+               x.causeTravaux ? 'les travaux à eux seuls dépassent le budget' : 'les charges absorbent déjà le loyer'}</td>`
+          : `<td>${eur(x.mensMax)}</td><td>${eur(x.empruntMax)}</td><td>${eur(x.coutMax)}</td>
+             <td style="font-weight:800">${eur(x.prixMax)}</td>
+             <td class="${cls(x.ecart)}">${eurS(x.ecart)}</td>
+             <td class="${cls(x.ecart)}" style="font-weight:800">${pctS(x.pct)}</td>`}
       </tr>`).join('')}
     </table></div>
   </div>`;
@@ -1004,7 +1026,7 @@ const CMP_COLS = [
   {k:'renta',    t:'Rentabilité',     f:pct},
   {k:'cashflow', t:'Cashflow /mois',  f:eurS, c:true},
   {k:'prixCible',t:'Prix à obtenir',  f:null},
-  {k:'negoNeed', t:'Négo nécessaire', f:v => v <= 0 ? '✅' : '−' + (v*100).toFixed(0) + ' %'},
+  {k:'negoNeed', t:'Négo nécessaire', f:v => v <= 0 ? '✅' : v >= 1 ? '—' : '−' + (v*100).toFixed(0) + ' %'},
   {k:'statut',   t:'Statut',          l:true}
 ];
 
@@ -1022,8 +1044,10 @@ function lignesCompare(){
         loyerMois: r.loyerMois, renta: r.renta,
         cashflow: r.cashflow, prixM2: r.prixM2, verdict: r.verdict,
         objectifCF: r.cibleCF, negoNeed: r.negoNeed,
-        // pas de négociation nécessaire → on n'invente pas un prix supérieur
-        prixCible: r.negoNeed > 0 ? r.objectif.prixMax : null
+        // ni prix supérieur inventé quand c'est déjà atteint, ni prix fantaisiste
+        // quand aucun prix ne peut suffire
+        prixCible: r.objectif.impossible ? 'impossible'
+                 : r.negoNeed > 0 ? r.objectif.prixMax : null
       });
     }
   }
@@ -1054,8 +1078,10 @@ function renderCompare(){
         return `<td style="text-align:left"><span class="pill ${STATUT_PILL[r.statut]||'gray'}">${esc(r.statut)}</span></td>`;
       if(c.l) return `<td style="text-align:left">${esc(r[c.k])}</td>`;
       const v = r[c.k];
-      if(c.k === 'prixCible')
+      if(c.k === 'prixCible'){
+        if(v === 'impossible') return `<td><span class="pill red">Aucun prix ne suffit</span></td>`;
         return `<td>${v == null ? '<span class="pill green">✅ Prix affiché</span>' : '<b>'+eur(v)+'</b>'}</td>`;
+      }
       return `<td class="${c.c?cls(v):''}" ${c.c?'style="font-weight:800"':''}>${c.f?c.f(v):esc(v)}</td>`;
     }).join('') + '</tr>').join('') + '</tbody>';
 }
