@@ -331,6 +331,11 @@ table.t td.name{font-weight:700;cursor:pointer;color:var(--navy2);white-space:no
 const LS_KEY = 'rampeLancement:v1';
 const STRATEGIES = ['À définir','Location nue','Location meublée','Colocation','Immeuble de rapport','Division','Courte durée'];
 const STATUTS = ['À étudier','À visiter','Visité','Offre faite','Offre acceptée','Sous compromis','Vendu','Refusé','Abandonné'];
+/* Dossiers terminés : ce que « Dossiers actifs » masque. « Sous compromis »
+   n'en fait pas partie — un compromis peut tomber et le bien revenir. */
+const STATUTS_CLOS = ['Vendu','Refusé','Abandonné'];
+/* Statuts qu'on peut masquer d'un clic, les seuls qu'on ait envie d'écarter. */
+const STATUTS_MASQUABLES = ['Vendu','Sous compromis','Refusé','Abandonné'];
 const CONTACTS = ['Non contacté','Contacté','Répondu','Sans réponse','RDV pris'];
 const TYPES = ['Studio','T1','T2','T3','T4','T5','T6','T7+','Maison','Immeuble','Local commercial'];
 const FIAB = ['Estimée','Confirmée'];
@@ -732,7 +737,13 @@ function biensFiltres(){
   const q = (document.getElementById('q').value || '').toLowerCase().trim();
   const fs = document.getElementById('fStatut').value;
   let arr = state.biens.filter(b => {
-    if(fs && b.statut !== fs) return false;
+    /* Le filtre peut inclure un statut, en exclure un (préfixe « ! »),
+       ou ne garder que les dossiers encore vivants. */
+    if(fs){
+      if(fs === 'actifs'){ if(STATUTS_CLOS.includes(b.statut)) return false; }
+      else if(fs.charAt(0) === '!'){ if(b.statut === fs.slice(1)) return false; }
+      else if(b.statut !== fs) return false;
+    }
     const fq = document.getElementById('fQuestions').value;
     if(fq === '1' && !(b.aDemander||'').trim()) return false;
     if(fq === '2' && !rappelsActifs(b).some(rappelEchu)) return false;
@@ -1912,7 +1923,14 @@ function migrer(st){
     if(view === 'detail') App.retour(true);
   });
   document.getElementById('fStatut').innerHTML =
-    '<option value="">Tous les statuts</option>' + STATUTS.map(s=>`<option>${s}</option>`).join('');
+    '<option value="">Tous les statuts</option>' +
+    '<option value="actifs">⚡ Dossiers actifs</option>' +
+    '<optgroup label="Afficher seulement">' +
+      STATUTS.map(s => `<option value="${s}">${s}</option>`).join('') +
+    '</optgroup>' +
+    '<optgroup label="Masquer">' +
+      STATUTS_MASQUABLES.map(s => `<option value="!${s}">Sauf « ${s} »</option>`).join('') +
+    '</optgroup>';
   ['q','fStatut','tri','grp','fQuestions'].forEach(id =>
     document.getElementById(id).addEventListener('input', renderListe));
 
